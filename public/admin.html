@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+>
+
+<title>ADMIN</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+
+    background:
+        radial-gradient(
+            circle at 50% -10%,
+            rgba(139,92,246,.35),
+            transparent 40%
+        ),
+        #08040e;
+
+    color: white;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Arial,
+        sans-serif;
+}
+
+body {
+    padding: 15px;
+}
+
+.app {
+    width: 100%;
+    max-width: 480px;
+    margin: auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    margin-bottom: 20px;
+}
+
+.title {
+    font-size: 24px;
+    font-weight: 900;
+}
+
+.subtitle {
+    margin-top: 3px;
+
+    color: #91859c;
+
+    font-size: 11px;
+}
+
+.badge {
+    padding: 8px 11px;
+
+    border-radius: 12px;
+
+    background:
+        rgba(168,85,247,.15);
+
+    border:
+        1px solid
+        rgba(168,85,247,.3);
+
+    color: #c4b5fd;
+
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+    gap: 9px;
+}
+
+.card {
+    padding: 16px;
+
+    border-radius: 18px;
+
+    background:
+        rgba(255,255,255,.055);
+
+    border:
+        1px solid
+        rgba(255,255,255,.09);
+
+    box-shadow:
+        0 15px 35px
+        rgba(0,0,0,.25);
+}
+
+.card-label {
+    color: #8f8498;
+
+    font-size: 10px;
+
+    text-transform: uppercase;
+
+    letter-spacing: .5px;
+}
+
+.card-value {
+    margin-top: 6px;
+
+    font-size: 23px;
+
+    font-weight: 900;
+}
+
+.card-value.purple {
+    color: #c4b5fd;
+}
+
+.card-value.green {
+    color: #4ade80;
+}
+
+.card-value.red {
+    color: #fb7185;
+}
+
+.section {
+    margin-top: 15px;
+}
+
+.section-title {
+    margin-bottom: 8px;
+
+    color: #9d92a9;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1px;
+}
+
+.big-card {
+    padding: 18px;
+
+    border-radius: 20px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(168,85,247,.17),
+            rgba(255,255,255,.035)
+        );
+
+    border:
+        1px solid
+        rgba(168,85,247,.2);
+}
+
+.row {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 11px 0;
+
+    border-bottom:
+        1px solid
+        rgba(255,255,255,.06);
+}
+
+.row:last-child {
+    border-bottom: 0;
+}
+
+.row-name {
+    color: #9d92a9;
+
+    font-size: 12px;
+}
+
+.row-value {
+    font-size: 14px;
+
+    font-weight: 900;
+}
+
+.commission {
+    color: #c4b5fd;
+
+    font-size: 25px;
+
+    font-weight: 900;
+}
+
+.refresh {
+    width: 100%;
+
+    height: 52px;
+
+    margin-top: 15px;
+
+    border: 0;
+
+    border-radius: 17px;
+
+    color: white;
+
+    background:
+        linear-gradient(
+            135deg,
+            #a855f7,
+            #7c3aed,
+            #6d28d9
+        );
+
+    font-size: 14px;
+
+    font-weight: 900;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 10px 30px
+        rgba(124,58,237,.35);
+}
+
+.refresh:disabled {
+    opacity: .5;
+}
+
+.error {
+    display: none;
+
+    margin-bottom: 12px;
+
+    padding: 12px;
+
+    border-radius: 14px;
+
+    text-align: center;
+
+    color: #fecdd3;
+
+    background:
+        rgba(244,63,94,.12);
+
+    border:
+        1px solid
+        rgba(244,63,94,.25);
+
+    font-size: 12px;
+}
+
+.error.show {
+    display: block;
+}
+
+.loading {
+    padding: 40px 10px;
+
+    text-align: center;
+
+    color: #91859c;
+
+    font-size: 13px;
+}
+
+.footer {
+    margin-top: 18px;
+
+    text-align: center;
+
+    color: #62586c;
+
+    font-size: 9px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="app">
+
+    <div class="header">
+
+        <div>
+
+            <div class="title">
+                👑 ADMIN
+            </div>
+
+            <div class="subtitle">
+                Панель владельца
+            </div>
+
+        </div>
+
+        <div class="badge">
+            PRIVATE
+        </div>
+
+    </div>
+
+
+    <div
+        class="error"
+        id="error"
+    ></div>
+
+
+    <div
+        class="loading"
+        id="loading"
+    >
+        Загрузка статистики...
+    </div>
+
+
+    <div
+        id="content"
+        style="display:none;"
+    >
+
+        <div class="grid">
+
+            <div class="card">
+
+                <div class="card-label">
+                    Игроки
+                </div>
+
+                <div
+                    class="card-value purple"
+                    id="players"
+                >
+                    0
+                </div>
+
+            </div>
+
+
+            <div class="card">
+
+                <div class="card-label">
+                    Игр
+                </div>
+
+                <div
+                    class="card-value"
+                    id="spins"
+                >
+                    0
+                </div>
+
+            </div>
+
+
+            <div class="card">
+
+                <div class="card-label">
+                    Оборот
+                </div>
+
+                <div
+                    class="card-value"
+                    id="bets"
+                >
+                    0
+                </div>
+
+            </div>
+
+
+            <div class="card">
+
+                <div class="card-label">
+                    Выигрыши
+                </div>
+
+                <div
+                    class="card-value green"
+                    id="wins"
+                >
+                    0
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="section">
+
+            <div class="section-title">
+                Твоя комиссия
+            </div>
+
+            <div class="big-card">
+
+                <div
+                    class="commission"
+                    id="commission"
+                >
+                    0
+                </div>
+
+                <div
+                    style="
+                        margin-top:4px;
+                        color:#81768d;
+                        font-size:10px;
+                    "
+                >
+                    10% от суммы выигрышей
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="section">
+
+            <div class="section-title">
+                Финансовая статистика
+            </div>
+
+            <div class="big-card">
+
+                <div class="row">
+
+                    <div class="row-name">
+                        Всего ставок
+                    </div>
+
+                    <div
+                        class="row-value"
+                        id="totalBets"
+                    >
+                        0
+                    </div>
+
+                </div>
+
+
+                <div class="row">
+
+                    <div class="row-name">
+                        Всего выплачено
+                    </div>
+
+                    <div
+                        class="row-value"
+                        id="totalWins"
+                    >
+                        0
+                    </div>
+
+                </div>
+
+
+                <div class="row">
+
+                    <div class="row-name">
+                        Результат проекта
+                    </div>
+
+                    <div
+                        class="row-value"
+                        id="projectResult"
+                    >
+                        0
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <button
+            class="refresh"
+            id="refresh"
+        >
+            🔄 ОБНОВИТЬ
+        </button>
+
+    </div>
+
+
+    <div class="footer">
+        DEMO ADMIN PANEL
+    </div>
+
+</div>
+
+
+<script>
+
+const tg =
+    window.Telegram?.WebApp;
+
+
+if (tg) {
+
+    tg.ready();
+
+    tg.expand();
+
+    try {
+
+        tg.setHeaderColor(
+            "#09050f"
+        );
+
+        tg.setBackgroundColor(
+            "#09050f"
+        );
+
+    } catch (e) {}
+
+}
+
+
+const loading =
+    document.getElementById(
+        "loading"
+    );
+
+
+const content =
+    document.getElementById(
+        "content"
+    );
+
+
+const error =
+    document.getElementById(
+        "error"
+    );
+
+
+const refresh =
+    document.getElementById(
+        "refresh"
+    );
+
+
+function headers() {
+
+    return {
+
+        "Content-Type":
+            "application/json",
+
+        "X-Telegram-Init-Data":
+            tg?.initData || ""
+
+    };
+
+}
+
+
+async function api(
+    url
+) {
+
+    const response =
+        await fetch(
+            url,
+            {
+                headers:
+                    headers()
+            }
+        );
+
+
+    let data;
+
+
+    try {
+
+        data =
+            await response.json();
+
+    } catch {
+
+        throw new Error(
+            "Некорректный ответ сервера"
+        );
+
+    }
+
+
+    if (
+        !response.ok ||
+        data.success === false
+    ) {
+
+        throw new Error(
+            data.error ||
+            "Ошибка сервера"
+        );
+
+    }
+
+
+    return data;
+
+}
+
+
+function number(
+    value
+) {
+
+    return Number(
+        value || 0
+    ).toLocaleString(
+        "ru-RU"
+    );
+
+}
+
+
+function showError(
+    message
+) {
+
+    error.textContent =
+        message;
+
+    error.classList.add(
+        "show"
+    );
+
+}
+
+
+async function loadStats() {
+
+    loading.style.display =
+        "block";
+
+    content.style.display =
+        "none";
+
+    error.classList.remove(
+        "show"
+    );
+
+
+    try {
+
+        const data =
+            await api(
+                "/api/admin/stats"
+            );
+
+
+        const stats =
+            data.stats;
+
+
+        document.getElementById(
+            "players"
+        ).textContent =
+            number(
+                stats.players
+            );
+
+
+        document.getElementById(
+            "spins"
+        ).textContent =
+            number(
+                stats.total_spins
+            );
+
+
+        document.getElementById(
+            "bets"
+        ).textContent =
+            number(
+                stats.total_bets
+            );
+
+
+        document.getElementById(
+            "wins"
+        ).textContent =
+            number(
+                stats.total_wins
+            );
+
+
+        document.getElementById(
+            "commission"
+        ).textContent =
+            number(
+                stats.commission
+            ) + " 💎";
+
+
+        document.getElementById(
+            "totalBets"
+        ).textContent =
+            number(
+                stats.total_bets
+            ) + " 💎";
+
+
+        document.getElementById(
+            "totalWins"
+        ).textContent =
+            number(
+                stats.total_wins
+            ) + " 💎";
+
+
+        const projectResult =
+            Number(
+                stats.project_result || 0
+            );
+
+
+        const resultElement =
+            document.getElementById(
+                "projectResult"
+            );
+
+
+        resultElement.textContent =
+            number(
+                projectResult
+            ) + " 💎";
+
+
+        resultElement.style.color =
+            projectResult >= 0
+                ? "#4ade80"
+                : "#fb7185";
+
+
+        loading.style.display =
+            "none";
+
+        content.style.display =
+            "block";
+
+
+    } catch (err) {
+
+        console.error(
+            err
+        );
+
+
+        loading.style.display =
+            "none";
+
+        showError(
+            err.message ||
+            "Не удалось загрузить статистику"
+        );
+
+    }
+
+}
+
+
+refresh.addEventListener(
+    "click",
+    async () => {
+
+        refresh.disabled =
+            true;
+
+        refresh.textContent =
+            "⏳ ЗАГРУЗКА...";
+
+        await loadStats();
+
+        refresh.disabled =
+            false;
+
+        refresh.textContent =
+            "🔄 ОБНОВИТЬ";
+
+    }
+);
+
+
+loadStats();
+
+</script>
+
+</body>
+
+</html>
