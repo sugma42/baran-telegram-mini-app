@@ -12,20 +12,19 @@ const dbPath = path.join(dataDir, "baran.db");
 const db = new Database(dbPath);
 
 db.pragma("journal_mode = WAL");
+db.pragma("foreign_keys = ON");
 
 /*
 |--------------------------------------------------------------------------
 | USERS
 |--------------------------------------------------------------------------
 |
-| balance хранится в "сотых единицах".
+| Баланс хранится в сотых единицах:
 |
 | 1.00 = 100
 | 0.10 = 10
 | 0.01 = 1
 |
-| Это позволяет не использовать floating point
-| для денег/баланса.
 |--------------------------------------------------------------------------
 */
 
@@ -144,7 +143,7 @@ db.exec(`
 
 /*
 |--------------------------------------------------------------------------
-| HELPERS
+| USERS
 |--------------------------------------------------------------------------
 */
 
@@ -225,11 +224,15 @@ function getUserByTelegramId(tgId) {
 
 function changeBalance(userId, amount) {
 
-    db.prepare(`
+    const result = db.prepare(`
         UPDATE users
         SET balance = balance + ?
         WHERE id = ?
     `).run(amount, userId);
+
+    if (result.changes === 0) {
+        throw new Error("Пользователь не найден");
+    }
 
     return db.prepare(`
         SELECT balance
@@ -239,6 +242,10 @@ function changeBalance(userId, amount) {
 }
 
 function setBalance(userId, balance) {
+
+    if (!Number.isInteger(balance)) {
+        throw new Error("Баланс должен быть целым числом");
+    }
 
     db.prepare(`
         UPDATE users
@@ -265,6 +272,14 @@ function addTransaction({
     amount,
     description = ""
 }) {
+
+    if (!type) {
+        throw new Error("Тип транзакции не указан");
+    }
+
+    if (!Number.isInteger(amount)) {
+        throw new Error("Сумма транзакции должна быть целым числом");
+    }
 
     db.prepare(`
         INSERT INTO transactions (
@@ -328,6 +343,10 @@ function saveSpin({
     adminCommission = 0
 }) {
 
+    if (!Array.isArray(combo) || combo.length !== 3) {
+        throw new Error("Некорректная комбинация");
+    }
+
     db.prepare(`
         INSERT INTO spins (
             user_id,
@@ -361,6 +380,14 @@ function saveSpin({
 */
 
 function getUserSpins(userId, limit = 20) {
+
+    limit = Math.max(
+        1,
+        Math.min(
+            100,
+            Number(limit) || 20
+        )
+    );
 
     return db.prepare(`
         SELECT
