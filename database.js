@@ -2,19 +2,15 @@ const Database = require("better-sqlite3");
 const path = require("path");
 const fs = require("fs");
 
-// Создаём папку data, если её нет
 const dataDir = path.join(__dirname, "data");
 
 if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
 }
 
-// Файл базы данных
 const dbPath = path.join(dataDir, "baran.db");
-
 const db = new Database(dbPath);
 
-// Включаем WAL — безопаснее и быстрее для небольшого приложения
 db.pragma("journal_mode = WAL");
 
 /*
@@ -22,14 +18,15 @@ db.pragma("journal_mode = WAL");
 | USERS
 |--------------------------------------------------------------------------
 |
-| Telegram-пользователь:
-| id       — внутренний ID
-| tg_id    — Telegram ID
-| username — username
-| first_name
-| balance  — виртуальные очки
-| created_at
+| balance хранится в "сотых единицах".
 |
+| 1.00 = 100
+| 0.10 = 10
+| 0.01 = 1
+|
+| Это позволяет не использовать floating point
+| для денег/баланса.
+|--------------------------------------------------------------------------
 */
 
 db.exec(`
@@ -38,28 +35,34 @@ db.exec(`
         tg_id TEXT UNIQUE NOT NULL,
         username TEXT,
         first_name TEXT,
-        balance INTEGER NOT NULL DEFAULT 1000,
+        photo_url TEXT,
+        balance INTEGER NOT NULL DEFAULT 100000,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 `);
 
+/*
+|--------------------------------------------------------------------------
+| MIGRATION
+|--------------------------------------------------------------------------
+*/
+
+const userColumns = db
+    .prepare(`PRAGMA table_info(users)`)
+    .all()
+    .map(row => row.name);
+
+if (!userColumns.includes("photo_url")) {
+    db.exec(`
+        ALTER TABLE users
+        ADD COLUMN photo_url TEXT
+    `);
+}
 
 /*
 |--------------------------------------------------------------------------
 | SPINS
 |--------------------------------------------------------------------------
-|
-| Сохраняем каждый спин:
-|
-| user_id    — пользователь
-| bet        — ставка
-| symbol1    — первый символ
-| symbol2    — второй символ
-| symbol3    — третий символ
-| multiplier — множитель
-| win        — сумма выигрыша
-| created_at — время
-|
 */
 
 db.exec(`
@@ -72,6 +75,8 @@ db.exec(`
         symbol3 TEXT NOT NULL,
         multiplier REAL NOT NULL,
         win INTEGER NOT NULL DEFAULT 0,
+        player_win INTEGER NOT NULL DEFAULT 0,
+        admin_commission INTEGER NOT NULL DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
         FOREIGN KEY (user_id)
@@ -80,10 +85,46 @@ db.exec(`
     );
 `);
 
+/*
+|--------------------------------------------------------------------------
+| TRANSACTIONS
+|--------------------------------------------------------------------------
+*/
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        type TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        description TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+        FOREIGN KEY (user_id)
+            REFERENCES users(id)
+            ON DELETE SET NULL
+    );
+`);
 
 /*
 |--------------------------------------------------------------------------
-| Индексы
+| ADMIN
+|--------------------------------------------------------------------------
+*/
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS admin_wallet (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        balance INTEGER NOT NULL DEFAULT 0
+    );
+
+    INSERT OR IGNORE INTO admin_wallet (id, balance)
+    VALUES (1, 0);
+`);
+
+/*
+|--------------------------------------------------------------------------
+| INDEXES
 |--------------------------------------------------------------------------
 */
 
@@ -96,12 +137,14 @@ db.exec(`
 
     CREATE INDEX IF NOT EXISTS idx_spins_created_at
     ON spins(created_at);
-`);
 
+    CREATE INDEX IF NOT EXISTS idx_transactions_user_id
+    ON transactions(user_id);
+`);
 
 /*
 |--------------------------------------------------------------------------
-| Получить или создать пользователя
+| HELPERS
 |--------------------------------------------------------------------------
 */
 
@@ -121,15 +164,16 @@ function getOrCreateUser(telegramUser) {
 
     if (user) {
 
-        // Обновляем актуальные данные Telegram
         db.prepare(`
             UPDATE users
             SET username = ?,
-                first_name = ?
+                first_name = ?,
+                photo_url = ?
             WHERE tg_id = ?
         `).run(
             telegramUser.username || null,
             telegramUser.first_name || null,
+            telegramUser.photo_url || null,
             tgId
         );
 
@@ -145,14 +189,16 @@ function getOrCreateUser(telegramUser) {
             tg_id,
             username,
             first_name,
+            photo_url,
             balance
         )
-        VALUES (?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?)
     `).run(
         tgId,
         telegramUser.username || null,
         telegramUser.first_name || null,
-        1000
+        telegramUser.photo_url || null,
+        100000
     );
 
     return db.prepare(`
@@ -161,13 +207,6 @@ function getOrCreateUser(telegramUser) {
         WHERE id = ?
     `).get(result.lastInsertRowid);
 }
-
-
-/*
-|--------------------------------------------------------------------------
-| Получить пользователя
-|--------------------------------------------------------------------------
-*/
 
 function getUserByTelegramId(tgId) {
 
@@ -178,10 +217,9 @@ function getUserByTelegramId(tgId) {
     `).get(String(tgId));
 }
 
-
 /*
 |--------------------------------------------------------------------------
-| Изменить баланс
+| BALANCE
 |--------------------------------------------------------------------------
 */
 
@@ -200,13 +238,6 @@ function changeBalance(userId, amount) {
     `).get(userId);
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| Установить баланс
-|--------------------------------------------------------------------------
-*/
-
 function setBalance(userId, balance) {
 
     db.prepare(`
@@ -222,10 +253,68 @@ function setBalance(userId, balance) {
     `).get(userId);
 }
 
+/*
+|--------------------------------------------------------------------------
+| TRANSACTIONS
+|--------------------------------------------------------------------------
+*/
+
+function addTransaction({
+    userId = null,
+    type,
+    amount,
+    description = ""
+}) {
+
+    db.prepare(`
+        INSERT INTO transactions (
+            user_id,
+            type,
+            amount,
+            description
+        )
+        VALUES (?, ?, ?, ?)
+    `).run(
+        userId,
+        type,
+        amount,
+        description
+    );
+}
 
 /*
 |--------------------------------------------------------------------------
-| Записать спин
+| ADMIN BALANCE
+|--------------------------------------------------------------------------
+*/
+
+function changeAdminBalance(amount) {
+
+    db.prepare(`
+        UPDATE admin_wallet
+        SET balance = balance + ?
+        WHERE id = 1
+    `).run(amount);
+
+    return db.prepare(`
+        SELECT balance
+        FROM admin_wallet
+        WHERE id = 1
+    `).get();
+}
+
+function getAdminBalance() {
+
+    return db.prepare(`
+        SELECT balance
+        FROM admin_wallet
+        WHERE id = 1
+    `).get().balance;
+}
+
+/*
+|--------------------------------------------------------------------------
+| SPIN
 |--------------------------------------------------------------------------
 */
 
@@ -234,7 +323,9 @@ function saveSpin({
     bet,
     combo,
     multiplier,
-    win
+    win,
+    playerWin = 0,
+    adminCommission = 0
 }) {
 
     db.prepare(`
@@ -245,9 +336,11 @@ function saveSpin({
             symbol2,
             symbol3,
             multiplier,
-            win
+            win,
+            player_win,
+            admin_commission
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
         userId,
         bet,
@@ -255,14 +348,15 @@ function saveSpin({
         combo[1],
         combo[2],
         multiplier,
-        win
+        win,
+        playerWin,
+        adminCommission
     );
 }
 
-
 /*
 |--------------------------------------------------------------------------
-| История пользователя
+| HISTORY
 |--------------------------------------------------------------------------
 */
 
@@ -277,6 +371,8 @@ function getUserSpins(userId, limit = 20) {
             symbol3,
             multiplier,
             win,
+            player_win,
+            admin_commission,
             created_at
         FROM spins
         WHERE user_id = ?
@@ -285,12 +381,48 @@ function getUserSpins(userId, limit = 20) {
     `).all(userId, limit);
 }
 
-
 /*
 |--------------------------------------------------------------------------
-| Экспорт
+| ADMIN STATS
 |--------------------------------------------------------------------------
 */
+
+function getAdminStats() {
+
+    const totalUsers = db.prepare(`
+        SELECT COUNT(*) AS count
+        FROM users
+    `).get().count;
+
+    const totalSpins = db.prepare(`
+        SELECT COUNT(*) AS count
+        FROM spins
+    `).get().count;
+
+    const totalBets = db.prepare(`
+        SELECT COALESCE(SUM(bet), 0) AS amount
+        FROM spins
+    `).get().amount;
+
+    const totalPlayerWins = db.prepare(`
+        SELECT COALESCE(SUM(player_win), 0) AS amount
+        FROM spins
+    `).get().amount;
+
+    const totalCommission = db.prepare(`
+        SELECT COALESCE(SUM(admin_commission), 0) AS amount
+        FROM spins
+    `).get().amount;
+
+    return {
+        totalUsers,
+        totalSpins,
+        totalBets,
+        totalPlayerWins,
+        totalCommission,
+        adminBalance: getAdminBalance()
+    };
+}
 
 module.exports = {
     db,
@@ -298,6 +430,10 @@ module.exports = {
     getUserByTelegramId,
     changeBalance,
     setBalance,
+    addTransaction,
+    changeAdminBalance,
+    getAdminBalance,
     saveSpin,
-    getUserSpins
+    getUserSpins,
+    getAdminStats
 };
