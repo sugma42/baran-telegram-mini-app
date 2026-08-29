@@ -17,7 +17,8 @@ const {
 
 const app = express();
 
-const PORT = process.env.PORT || 3000;
+const PORT =
+    process.env.PORT || 3000;
 
 app.use(express.json());
 
@@ -37,10 +38,15 @@ function validateTelegramInitData(initData) {
         return null;
     }
 
-    const botToken = process.env.BOT_TOKEN;
+    const botToken =
+        process.env.BOT_TOKEN;
 
     if (!botToken) {
-        console.error("BOT_TOKEN не указан");
+
+        console.error(
+            "BOT_TOKEN не указан"
+        );
+
         return null;
     }
 
@@ -96,8 +102,12 @@ function validateTelegramInitData(initData) {
 
         if (
             !crypto.timingSafeEqual(
-                Buffer.from(calculatedHash),
-                Buffer.from(receivedHash)
+                Buffer.from(
+                    calculatedHash
+                ),
+                Buffer.from(
+                    receivedHash
+                )
             )
         ) {
             return null;
@@ -129,9 +139,16 @@ function validateTelegramInitData(initData) {
 |--------------------------------------------------------------------------
 */
 
-function authenticate(req, res, next) {
+function authenticate(
+    req,
+    res,
+    next
+) {
 
-    if (process.env.DEMO_MODE === "true") {
+    if (
+        process.env.DEMO_MODE ===
+        "true"
+    ) {
 
         req.telegramUser = {
             id: "123456789",
@@ -144,7 +161,9 @@ function authenticate(req, res, next) {
     }
 
     const initData =
-        req.headers["x-telegram-init-data"];
+        req.headers[
+            "x-telegram-init-data"
+        ];
 
     const telegramUser =
         validateTelegramInitData(
@@ -155,7 +174,8 @@ function authenticate(req, res, next) {
 
         return res.status(401).json({
             success: false,
-            error: "Telegram authentication failed"
+            error:
+                "Telegram authentication failed"
         });
     }
 
@@ -171,7 +191,11 @@ function authenticate(req, res, next) {
 |--------------------------------------------------------------------------
 */
 
-function adminOnly(req, res, next) {
+function adminOnly(
+    req,
+    res,
+    next
+) {
 
     const adminId =
         String(
@@ -190,7 +214,8 @@ function adminOnly(req, res, next) {
 
         return res.status(403).json({
             success: false,
-            error: "Доступ запрещён"
+            error:
+                "Доступ запрещён"
         });
     }
 
@@ -233,24 +258,28 @@ app.get(
                 );
 
             res.json({
+
                 success: true,
 
                 user: {
                     id: user.id,
-                    telegram_id: user.tg_id,
-                    username: user.username,
-                    first_name: user.first_name,
-                    photo_url: user.photo_url,
-                    balance: user.balance
+                    telegram_id:
+                        user.tg_id,
+                    username:
+                        user.username,
+                    first_name:
+                        user.first_name,
+                    photo_url:
+                        user.photo_url,
+                    balance:
+                        Number(user.balance)
                 }
+
             });
 
         } catch (error) {
 
-            console.error(
-                "ME ERROR:",
-                error
-            );
+            console.error(error);
 
             res.status(500).json({
                 success: false,
@@ -293,11 +322,15 @@ for (const a of symbols) {
 
                     multiplier = 4;
 
-                } else if (a === "🍋") {
+                } else if (
+                    a === "🍋"
+                ) {
 
                     multiplier = 2.5;
 
-                } else if (a === "🍒") {
+                } else if (
+                    a === "🍒"
+                ) {
 
                     multiplier = 2;
 
@@ -310,19 +343,25 @@ for (const a of symbols) {
 
                 const counts = {};
 
-                [a, b, c].forEach(symbol => {
+                [a, b, c].forEach(
+                    symbol => {
 
-                    counts[symbol] =
-                        (counts[symbol] || 0) + 1;
+                        counts[symbol] =
+                            (counts[symbol] || 0) + 1;
 
-                });
+                    }
+                );
 
                 const maxCount =
                     Math.max(
-                        ...Object.values(counts)
+                        ...Object.values(
+                            counts
+                        )
                     );
 
-                if (maxCount === 2) {
+                if (
+                    maxCount === 2
+                ) {
 
                     if (
                         counts["7️⃣"] === 2
@@ -366,23 +405,33 @@ for (const a of symbols) {
 
             let weight = 10;
 
-            if (multiplier >= 4) {
+            if (
+                multiplier >= 4
+            ) {
 
                 weight = 0.4;
 
-            } else if (multiplier >= 2) {
+            } else if (
+                multiplier >= 2
+            ) {
 
                 weight = 1.5;
 
-            } else if (multiplier >= 1.4) {
+            } else if (
+                multiplier >= 1.4
+            ) {
 
                 weight = 3;
 
-            } else if (multiplier >= 1) {
+            } else if (
+                multiplier >= 1
+            ) {
 
                 weight = 5;
 
-            } else if (multiplier > 0) {
+            } else if (
+                multiplier > 0
+            ) {
 
                 weight = 7;
             }
@@ -412,9 +461,12 @@ function getRandomCombination() {
         );
 
     let random =
-        Math.random() * totalWeight;
+        Math.random() *
+        totalWeight;
 
-    for (const item of combinations) {
+    for (
+        const item of combinations
+    ) {
 
         random -= item.weight;
 
@@ -459,7 +511,9 @@ app.post(
                 });
             }
 
-            if (bet > 10000000) {
+            if (
+                bet > 10000000
+            ) {
 
                 return res.status(400).json({
                     success: false,
@@ -468,7 +522,9 @@ app.post(
                 });
             }
 
-            if (user.balance < bet) {
+            if (
+                user.balance < bet
+            ) {
 
                 return res.status(400).json({
                     success: false,
@@ -482,16 +538,18 @@ app.post(
 
             const grossWin =
                 Math.floor(
-                    bet * result.multiplier
+                    bet *
+                    result.multiplier
                 );
 
             let playerWin =
                 grossWin;
 
-            let adminCommission =
-                0;
+            let adminCommission = 0;
 
-            if (grossWin > 0) {
+            if (
+                grossWin > 0
+            ) {
 
                 adminCommission =
                     Math.floor(
@@ -503,72 +561,65 @@ app.post(
                     adminCommission;
             }
 
-            /*
-             * Вся операция в одной SQLite transaction.
-             */
+            changeBalance(
+                user.id,
+                -bet
+            );
 
-            const transaction =
-                require("./database").db.transaction(
-                    () => {
+            if (
+                playerWin > 0
+            ) {
 
-                        changeBalance(
-                            user.id,
-                            -bet
-                        );
-
-                        if (playerWin > 0) {
-
-                            changeBalance(
-                                user.id,
-                                playerWin
-                            );
-                        }
-
-                        if (adminCommission > 0) {
-
-                            changeAdminBalance(
-                                adminCommission
-                            );
-                        }
-
-                        saveSpin({
-
-                            userId: user.id,
-
-                            bet,
-
-                            combo:
-                                result.combo,
-
-                            multiplier:
-                                result.multiplier,
-
-                            win:
-                                grossWin,
-
-                            playerWin,
-
-                            adminCommission
-                        });
-
-                        addTransaction({
-
-                            userId:
-                                user.id,
-
-                            type:
-                                "spin",
-
-                            amount:
-                                playerWin - bet,
-
-                            description:
-                                `Ставка ${bet}, результат ${result.multiplier}x`
-                        });
-                    }
+                changeBalance(
+                    user.id,
+                    playerWin
                 );
+            }
 
-            transaction();
+            if (
+                adminCommission > 0
+            ) {
+
+                changeAdminBalance(
+                    adminCommission
+                );
+            }
+
+            saveSpin({
+
+                userId:
+                    user.id,
+
+                bet,
+
+                combo:
+                    result.combo,
+
+                multiplier:
+                    result.multiplier,
+
+                win:
+                    grossWin,
+
+                playerWin,
+
+                adminCommission
+            });
+
+            addTransaction({
+
+                userId:
+                    user.id,
+
+                type:
+                    "spin",
+
+                amount:
+                    playerWin - bet,
+
+                description:
+                    `Ставка ${bet}, результат ${result.multiplier}x`
+            });
 
             const updatedUser =
                 getUserByTelegramId(
@@ -598,7 +649,9 @@ app.post(
                 },
 
                 balance:
-                    updatedUser.balance
+                    Number(
+                        updatedUser.balance
+                    )
             });
 
         } catch (error) {
@@ -621,15 +674,6 @@ app.post(
 |--------------------------------------------------------------------------
 | DEMO DEPOSIT
 |--------------------------------------------------------------------------
-|
-| amount приходит уже в СОТЫХ единицах.
-|
-| Например:
-|
-| 1.00 -> frontend -> 100
-| 10.00 -> frontend -> 1000
-|
-|--------------------------------------------------------------------------
 */
 
 app.post(
@@ -639,8 +683,33 @@ app.post(
 
         try {
 
+            console.log(
+                "================================="
+            );
+
+            console.log(
+                "💰 DEPOSIT REQUEST"
+            );
+
+            console.log(
+                "Telegram user:",
+                req.telegramUser
+            );
+
+            console.log(
+                "Body:",
+                req.body
+            );
+
             const amount =
-                Number(req.body.amount);
+                Number(
+                    req.body.amount
+                );
+
+            console.log(
+                "Amount:",
+                amount
+            );
 
             if (
                 !Number.isInteger(amount) ||
@@ -660,62 +729,82 @@ app.post(
                     req.telegramUser
                 );
 
-            /*
-             * Пополнение и запись транзакции
-             * выполняются вместе.
-             */
+            console.log(
+                "User ID:",
+                user.id
+            );
 
-            const transaction =
-                require("./database").db.transaction(
-                    () => {
+            console.log(
+                "Balance BEFORE:",
+                user.balance
+            );
 
-                        changeBalance(
-                            user.id,
-                            amount
-                        );
-
-                        addTransaction({
-
-                            userId:
-                                user.id,
-
-                            type:
-                                "demo_deposit",
-
-                            amount,
-
-                            description:
-                                "Демо-пополнение"
-                        });
-                    }
+            const changed =
+                changeBalance(
+                    user.id,
+                    amount
                 );
 
-            transaction();
+            console.log(
+                "Balance AFTER:",
+                changed.balance
+            );
 
-            const updated =
+            addTransaction({
+
+                userId:
+                    user.id,
+
+                type:
+                    "demo_deposit",
+
+                amount,
+
+                description:
+                    "Демо-пополнение"
+            });
+
+            const updatedUser =
                 getUserByTelegramId(
                     user.tg_id
                 );
 
-            res.json({
+            console.log(
+                "Balance FROM DB:",
+                updatedUser.balance
+            );
+
+            console.log(
+                "================================="
+            );
+
+            return res.json({
 
                 success: true,
 
+                amount,
+
                 balance:
-                    updated.balance
+                    Number(
+                        updatedUser.balance
+                    )
             });
 
         } catch (error) {
 
             console.error(
-                "DEPOSIT ERROR:",
+                "❌ DEPOSIT ERROR:",
                 error
             );
 
-            res.status(500).json({
+            return res.status(500).json({
+
                 success: false,
+
                 error:
+                    error.message ||
                     "Ошибка пополнения"
+
             });
         }
     }
@@ -750,36 +839,38 @@ app.get(
                 success: true,
 
                 history:
-                    history.map(spin => ({
-                        id:
-                            spin.id,
+                    history.map(
+                        spin => ({
 
-                        bet:
-                            spin.bet,
+                            id:
+                                spin.id,
 
-                        combo: [
-                            spin.symbol1,
-                            spin.symbol2,
-                            spin.symbol3
-                        ],
+                            bet:
+                                spin.bet,
 
-                        multiplier:
-                            spin.multiplier,
+                            combo: [
+                                spin.symbol1,
+                                spin.symbol2,
+                                spin.symbol3
+                            ],
 
-                        win:
-                            spin.player_win,
+                            multiplier:
+                                spin.multiplier,
 
-                        created_at:
-                            spin.created_at
-                    }))
+                            win:
+                                spin.player_win,
+
+                            created_at:
+                                spin.created_at
+
+                        })
+                    )
+
             });
 
         } catch (error) {
 
-            console.error(
-                "HISTORY ERROR:",
-                error
-            );
+            console.error(error);
 
             res.status(500).json({
                 success: false,
@@ -812,14 +903,12 @@ app.get(
                 success: true,
 
                 stats
+
             });
 
         } catch (error) {
 
-            console.error(
-                "ADMIN STATS ERROR:",
-                error
-            );
+            console.error(error);
 
             res.status(500).json({
                 success: false,
@@ -845,7 +934,9 @@ app.post(
         try {
 
             const amount =
-                Number(req.body.amount);
+                Number(
+                    req.body.amount
+                );
 
             if (
                 !Number.isInteger(amount) ||
@@ -863,7 +954,8 @@ app.post(
                 getAdminStats();
 
             if (
-                stats.adminBalance < amount
+                stats.adminBalance <
+                amount
             ) {
 
                 return res.status(400).json({
@@ -884,14 +976,12 @@ app.post(
                 adminBalance:
                     getAdminStats()
                         .adminBalance
+
             });
 
         } catch (error) {
 
-            console.error(
-                "WITHDRAW ERROR:",
-                error
-            );
+            console.error(error);
 
             res.status(500).json({
                 success: false,
@@ -908,16 +998,20 @@ app.post(
 |--------------------------------------------------------------------------
 */
 
-app.use((req, res) => {
+app.use(
+    (req, res) => {
 
-    res.status(404).json({
+        res.status(404).json({
 
-        success: false,
+            success: false,
 
-        error:
-            "Страница не найдена"
-    });
-});
+            error:
+                "Страница не найдена"
+
+        });
+
+    }
+);
 
 /*
 |--------------------------------------------------------------------------
@@ -925,13 +1019,30 @@ app.use((req, res) => {
 |--------------------------------------------------------------------------
 */
 
-app.listen(PORT, () => {
+app.listen(
+    PORT,
+    () => {
 
-    console.log("");
-    console.log("=================================");
-    console.log("🐏 БАРАН SERVER");
-    console.log("=================================");
-    console.log(`🚀 Порт: ${PORT}`);
-    console.log("=================================");
-    console.log("");
-});
+        console.log("");
+        console.log(
+            "================================="
+        );
+        console.log(
+            "🐏 БАРАН SERVER"
+        );
+        console.log(
+            "================================="
+        );
+        console.log(
+            `🚀 Порт: ${PORT}`
+        );
+        console.log(
+            `💰 Deposit API: /api/demo/deposit`
+        );
+        console.log(
+            "================================="
+        );
+        console.log("");
+
+    }
+);
