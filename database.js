@@ -9,6 +9,7 @@ if (!fs.existsSync(dataDir)) {
 }
 
 const dbPath = path.join(dataDir, "baran.db");
+
 const db = new Database(dbPath);
 
 db.pragma("journal_mode = WAL");
@@ -19,7 +20,7 @@ db.pragma("foreign_keys = ON");
 | USERS
 |--------------------------------------------------------------------------
 |
-| Баланс хранится в сотых единицах:
+| Баланс хранится в сотых:
 |
 | 1.00 = 100
 | 0.10 = 10
@@ -228,10 +229,15 @@ function changeBalance(userId, amount) {
         UPDATE users
         SET balance = balance + ?
         WHERE id = ?
-    `).run(amount, userId);
+    `).run(
+        amount,
+        userId
+    );
 
-    if (result.changes === 0) {
-        throw new Error("Пользователь не найден");
+    if (result.changes !== 1) {
+        throw new Error(
+            `Не удалось изменить баланс. User ID: ${userId}`
+        );
     }
 
     return db.prepare(`
@@ -243,15 +249,20 @@ function changeBalance(userId, amount) {
 
 function setBalance(userId, balance) {
 
-    if (!Number.isInteger(balance)) {
-        throw new Error("Баланс должен быть целым числом");
-    }
-
-    db.prepare(`
+    const result = db.prepare(`
         UPDATE users
         SET balance = ?
         WHERE id = ?
-    `).run(balance, userId);
+    `).run(
+        balance,
+        userId
+    );
+
+    if (result.changes !== 1) {
+        throw new Error(
+            `Не удалось установить баланс. User ID: ${userId}`
+        );
+    }
 
     return db.prepare(`
         SELECT balance
@@ -272,14 +283,6 @@ function addTransaction({
     amount,
     description = ""
 }) {
-
-    if (!type) {
-        throw new Error("Тип транзакции не указан");
-    }
-
-    if (!Number.isInteger(amount)) {
-        throw new Error("Сумма транзакции должна быть целым числом");
-    }
 
     db.prepare(`
         INSERT INTO transactions (
@@ -320,11 +323,13 @@ function changeAdminBalance(amount) {
 
 function getAdminBalance() {
 
-    return db.prepare(`
+    const row = db.prepare(`
         SELECT balance
         FROM admin_wallet
         WHERE id = 1
-    `).get().balance;
+    `).get();
+
+    return row ? row.balance : 0;
 }
 
 /*
@@ -342,10 +347,6 @@ function saveSpin({
     playerWin = 0,
     adminCommission = 0
 }) {
-
-    if (!Array.isArray(combo) || combo.length !== 3) {
-        throw new Error("Некорректная комбинация");
-    }
 
     db.prepare(`
         INSERT INTO spins (
@@ -381,14 +382,6 @@ function saveSpin({
 
 function getUserSpins(userId, limit = 20) {
 
-    limit = Math.max(
-        1,
-        Math.min(
-            100,
-            Number(limit) || 20
-        )
-    );
-
     return db.prepare(`
         SELECT
             id,
@@ -405,7 +398,10 @@ function getUserSpins(userId, limit = 20) {
         WHERE user_id = ?
         ORDER BY id DESC
         LIMIT ?
-    `).all(userId, limit);
+    `).all(
+        userId,
+        limit
+    );
 }
 
 /*
