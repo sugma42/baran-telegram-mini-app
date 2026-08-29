@@ -1,12 +1,19 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<title>БАРАН — Казино</title>
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+>
+
+<title>Casino</title>
 
 <style>
+
 * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
@@ -17,8 +24,6 @@
     --bg2: #130821;
     --purple: #8b5cf6;
     --purple2: #a855f7;
-    --purple3: #6d28d9;
-    --text: #fff;
     --muted: #9d92a9;
     --green: #4ade80;
     --red: #fb7185;
@@ -33,11 +38,6 @@ body {
             circle at 50% -10%,
             rgba(139,92,246,.38),
             transparent 40%
-        ),
-        radial-gradient(
-            circle at 0% 50%,
-            rgba(124,58,237,.16),
-            transparent 35%
         ),
         linear-gradient(
             180deg,
@@ -70,63 +70,39 @@ button {
     padding: 14px 14px 35px;
 }
 
-/* BACKGROUND */
-
-.glow {
-    position: fixed;
-    width: 300px;
-    height: 300px;
-    left: 50%;
-    top: 30%;
-    transform: translate(-50%, -50%);
-    background: rgba(168,85,247,.15);
-    filter: blur(100px);
-    pointer-events: none;
-}
-
-/* HEADER */
-
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: relative;
-    z-index: 2;
 }
 
-.logo {
+.profile {
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-.logo-icon {
+.avatar {
     width: 45px;
     height: 45px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     border-radius: 15px;
-    font-size: 24px;
+    object-fit: cover;
     background: linear-gradient(
         135deg,
         #a855f7,
         #6d28d9
     );
-    box-shadow:
-        0 10px 30px
-        rgba(139,92,246,.45);
 }
 
-.logo-title {
-    font-size: 18px;
+.profile-name {
+    font-size: 15px;
     font-weight: 900;
 }
 
-.logo-sub {
-    margin-top: 2px;
+.profile-sub {
     color: var(--muted);
-    font-size: 11px;
+    font-size: 10px;
+    margin-top: 2px;
 }
 
 .balance {
@@ -135,7 +111,6 @@ button {
     text-align: right;
     background: rgba(255,255,255,.06);
     border: 1px solid rgba(255,255,255,.10);
-    backdrop-filter: blur(15px);
 }
 
 .balance-label {
@@ -150,8 +125,6 @@ button {
     font-weight: 900;
 }
 
-/* HERO */
-
 .hero {
     text-align: center;
     margin: 23px 0 18px;
@@ -161,7 +134,6 @@ button {
     margin: 0;
     font-size: 29px;
     font-weight: 900;
-    letter-spacing: -.8px;
 }
 
 .hero p {
@@ -170,7 +142,21 @@ button {
     font-size: 13px;
 }
 
-/* SLOT */
+.error {
+    display: none;
+    margin-bottom: 12px;
+    padding: 12px;
+    border-radius: 14px;
+    text-align: center;
+    color: #fecdd3;
+    background: rgba(244,63,94,.12);
+    border: 1px solid rgba(244,63,94,.25);
+    font-size: 12px;
+}
+
+.error.show {
+    display: block;
+}
 
 .slot-card {
     padding: 17px;
@@ -185,7 +171,6 @@ button {
     box-shadow:
         0 25px 70px rgba(0,0,0,.45),
         inset 0 1px rgba(255,255,255,.08);
-    backdrop-filter: blur(20px);
 }
 
 .slot-label {
@@ -204,8 +189,6 @@ button {
     padding: 9px;
     border-radius: 22px;
     background: rgba(0,0,0,.38);
-    border: 1px solid rgba(255,255,255,.07);
-    box-shadow: inset 0 0 30px rgba(0,0,0,.5);
 }
 
 .reel {
@@ -214,60 +197,34 @@ button {
     align-items: center;
     justify-content: center;
     border-radius: 17px;
-    position: relative;
-    overflow: hidden;
-    background:
-        linear-gradient(
-            180deg,
-            rgba(255,255,255,.08),
-            rgba(255,255,255,.025)
-        );
-    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.05);
     font-size: 49px;
-    box-shadow:
-        inset 0 1px rgba(255,255,255,.08),
-        0 8px 20px rgba(0,0,0,.25);
-}
-
-.reel::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background:
-        linear-gradient(
-            180deg,
-            rgba(255,255,255,.12),
-            transparent 25%,
-            transparent 75%,
-            rgba(0,0,0,.2)
-        );
 }
 
 .reel.spinning {
-    animation: reelShake .08s linear infinite;
+    animation: shake .08s linear infinite;
 }
 
-@keyframes reelShake {
+@keyframes shake {
+
     0% {
         transform: translateY(-3px);
     }
+
     50% {
         transform: translateY(3px);
     }
+
     100% {
         transform: translateY(-3px);
     }
 }
-
-/* RESULT */
 
 .result {
     min-height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
-    text-align: center;
     margin-top: 10px;
     font-size: 15px;
     font-weight: 900;
@@ -279,16 +236,11 @@ button {
 
 .result.win {
     color: #c4b5fd;
-    text-shadow:
-        0 0 20px
-        rgba(168,85,247,.9);
 }
 
 .result.lose {
     color: var(--red);
 }
-
-/* SECTION */
 
 .section-title {
     margin: 19px 3px 8px;
@@ -299,8 +251,6 @@ button {
     letter-spacing: 1px;
 }
 
-/* BET */
-
 .bet-box {
     display: flex;
     align-items: center;
@@ -308,7 +258,6 @@ button {
     padding: 10px;
     border-radius: 18px;
     background: rgba(255,255,255,.055);
-    border: 1px solid rgba(255,255,255,.10);
 }
 
 .bet-button {
@@ -319,12 +268,6 @@ button {
     color: white;
     background: rgba(255,255,255,.075);
     font-size: 24px;
-    cursor: pointer;
-}
-
-.bet-button:active {
-    transform: scale(.93);
-    background: rgba(139,92,246,.3);
 }
 
 .bet-center {
@@ -343,8 +286,6 @@ button {
     font-weight: 900;
 }
 
-/* QUICK BET */
-
 .quick-bets {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -359,7 +300,6 @@ button {
     color: #c9c0d0;
     font-size: 11px;
     font-weight: 800;
-    cursor: pointer;
 }
 
 .quick.active {
@@ -367,8 +307,6 @@ button {
     border-color: rgba(168,85,247,.6);
     background: rgba(139,92,246,.23);
 }
-
-/* SPIN */
 
 .spin {
     width: 100%;
@@ -379,8 +317,6 @@ button {
     color: white;
     font-size: 16px;
     font-weight: 900;
-    letter-spacing: .5px;
-    cursor: pointer;
     background:
         linear-gradient(
             135deg,
@@ -388,23 +324,37 @@ button {
             #7c3aed,
             #6d28d9
         );
-    box-shadow:
-        0 12px 32px
-        rgba(124,58,237,.42),
-        inset 0 1px
-        rgba(255,255,255,.25);
-    transition: .15s;
-}
-
-.spin:active {
-    transform: scale(.98);
 }
 
 .spin:disabled {
     opacity: .55;
 }
 
-/* HISTORY */
+.deposit-box {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.deposit-input {
+    grid-column: 1 / -1;
+    width: 100%;
+    padding: 13px;
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 14px;
+    outline: none;
+    color: white;
+    background: rgba(255,255,255,.05);
+}
+
+.deposit-button {
+    height: 42px;
+    border: 0;
+    border-radius: 13px;
+    color: white;
+    background: rgba(139,92,246,.3);
+    font-weight: 800;
+}
 
 .history {
     display: flex;
@@ -419,22 +369,20 @@ button {
     padding: 10px 13px;
     border-radius: 15px;
     background: rgba(255,255,255,.045);
-    border: 1px solid rgba(255,255,255,.06);
 }
 
 .history-symbols {
     font-size: 20px;
-    letter-spacing: 1px;
-}
-
-.history-right {
-    text-align: right;
 }
 
 .history-bet {
     color: #80758b;
     font-size: 9px;
     margin-bottom: 2px;
+}
+
+.history-right {
+    text-align: right;
 }
 
 .history-mult {
@@ -457,30 +405,17 @@ button {
     font-size: 12px;
 }
 
-/* PAYTABLE */
-
 .paytable {
     overflow: hidden;
     border-radius: 18px;
-    border: 1px solid rgba(255,255,255,.10);
     background: rgba(255,255,255,.04);
 }
 
 .pay-row {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    padding: 10px 13px;
+    padding: 9px 13px;
     border-bottom: 1px solid rgba(255,255,255,.055);
-    font-size: 13px;
-}
-
-.pay-row:last-child {
-    border-bottom: 0;
-}
-
-.pay-combo {
-    letter-spacing: 2px;
 }
 
 .pay-mult {
@@ -488,70 +423,91 @@ button {
     font-weight: 900;
 }
 
-/* WIN */
-
-.win-animation {
-    animation: winPulse .5s ease;
-}
-
-@keyframes winPulse {
-    0% {
-        transform: scale(1);
-    }
-
-    50% {
-        transform: scale(1.025);
-    }
-
-    100% {
-        transform: scale(1);
-    }
-}
-
-/* ERROR */
-
-.error {
+.admin {
     display: none;
+    padding: 15px;
+    border-radius: 20px;
+    background: rgba(168,85,247,.10);
+    border: 1px solid rgba(168,85,247,.25);
+}
+
+.admin.show {
+    display: block;
+}
+
+.admin-title {
+    font-size: 15px;
+    font-weight: 900;
     margin-bottom: 12px;
-    padding: 12px;
-    border-radius: 14px;
-    text-align: center;
-    color: #fecdd3;
-    background: rgba(244,63,94,.12);
-    border: 1px solid rgba(244,63,94,.25);
+}
+
+.admin-stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 7px 0;
+    color: #c9c0d0;
     font-size: 12px;
 }
 
-.error.show {
-    display: block;
+.admin-value {
+    color: white;
+    font-weight: 900;
 }
+
+.admin-withdraw {
+    display: flex;
+    gap: 7px;
+    margin-top: 10px;
+}
+
+.admin-withdraw input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px;
+    border: 0;
+    border-radius: 10px;
+    color: white;
+    background: rgba(0,0,0,.3);
+}
+
+.admin-withdraw button {
+    border: 0;
+    border-radius: 10px;
+    padding: 0 12px;
+    color: white;
+    background: #6d28d9;
+}
+
 </style>
+
 </head>
 
 <body>
 
-<div class="glow"></div>
-
 <div class="app">
-
-    <!-- HEADER -->
 
     <div class="header">
 
-        <div class="logo">
+        <div class="profile">
 
-            <div class="logo-icon">
-                🐏
-            </div>
+            <img
+                class="avatar"
+                id="avatar"
+                src=""
+                alt=""
+            >
 
             <div>
 
-                <div class="logo-title">
-                    БАРАН
+                <div
+                    class="profile-name"
+                    id="username"
+                >
+                    Игрок
                 </div>
 
-                <div class="logo-sub">
-                    PvP • Casino
+                <div class="profile-sub">
+                    Casino
                 </div>
 
             </div>
@@ -565,36 +521,27 @@ button {
             </div>
 
             <div class="balance-value">
-                💎 <span id="balance">1000</span>
+                💎 <span id="balance">0.00</span>
             </div>
 
         </div>
 
     </div>
 
-
-    <!-- HERO -->
-
     <div class="hero">
 
-        <h1>
-            🎰 Казино
-        </h1>
+        <h1>🎰 Казино</h1>
 
         <p>
-            Испытай удачу и поймай комбинацию
+            Испытай удачу
         </p>
 
     </div>
-
 
     <div
         class="error"
         id="error"
     ></div>
-
-
-    <!-- SLOT -->
 
     <div
         class="slot-card"
@@ -607,26 +554,9 @@ button {
 
         <div class="reels">
 
-            <div
-                class="reel"
-                id="reel1"
-            >
-                🍋
-            </div>
-
-            <div
-                class="reel"
-                id="reel2"
-            >
-                7️⃣
-            </div>
-
-            <div
-                class="reel"
-                id="reel3"
-            >
-                🍒
-            </div>
+            <div class="reel" id="reel1">🍋</div>
+            <div class="reel" id="reel2">7️⃣</div>
+            <div class="reel" id="reel3">🍒</div>
 
         </div>
 
@@ -638,9 +568,6 @@ button {
         </div>
 
     </div>
-
-
-    <!-- BET -->
 
     <div class="section-title">
         Ставка
@@ -662,7 +589,7 @@ button {
             </div>
 
             <div class="bet-value">
-                💎 <span id="bet">50</span>
+                💎 <span id="bet">0.10</span>
             </div>
 
         </div>
@@ -676,47 +603,29 @@ button {
 
     </div>
 
-
-    <!-- QUICK BET -->
-
     <div class="section-title">
         Быстрая ставка
     </div>
 
     <div class="quick-bets">
 
-        <button
-            class="quick"
-            data-value="10"
-        >
-            10
+        <button class="quick" data-value="1">
+            0.01
         </button>
 
-        <button
-            class="quick active"
-            data-value="50"
-        >
-            50
+        <button class="quick active" data-value="10">
+            0.10
         </button>
 
-        <button
-            class="quick"
-            data-value="100"
-        >
-            100
+        <button class="quick" data-value="100">
+            1.00
         </button>
 
-        <button
-            class="quick"
-            data-value="250"
-        >
-            250
+        <button class="quick" data-value="1000">
+            10.00
         </button>
 
     </div>
-
-
-    <!-- SPIN -->
 
     <button
         class="spin"
@@ -725,8 +634,37 @@ button {
         🎰 КРУТИТЬ
     </button>
 
+    <div class="section-title">
+        Демо-пополнение
+    </div>
 
-    <!-- HISTORY -->
+    <div class="deposit-box">
+
+        <input
+            class="deposit-input"
+            id="depositAmount"
+            type="number"
+            min="0.01"
+            step="0.01"
+            value="1.00"
+            placeholder="Сумма"
+        >
+
+        <button
+            class="deposit-button"
+            id="deposit"
+        >
+            + Пополнить
+        </button>
+
+        <button
+            class="deposit-button"
+            id="deposit10"
+        >
+            +10.00
+        </button>
+
+    </div>
 
     <div class="section-title">
         Последние игры
@@ -736,15 +674,10 @@ button {
         class="history"
         id="history"
     >
-
         <div class="empty">
             Здесь появятся результаты
         </div>
-
     </div>
-
-
-    <!-- PAYTABLE -->
 
     <div class="section-title">
         Таблица выплат
@@ -755,13 +688,111 @@ button {
         id="paytable"
     ></div>
 
+    <div
+        class="section-title"
+        id="adminTitle"
+        style="display:none;"
+    >
+        Админ
+    </div>
+
+    <div
+        class="admin"
+        id="admin"
+    >
+
+        <div class="admin-title">
+            👑 Админ-панель
+        </div>
+
+        <div class="admin-stat">
+            <span>Игроков</span>
+            <span
+                class="admin-value"
+                id="adminUsers"
+            >
+                0
+            </span>
+        </div>
+
+        <div class="admin-stat">
+            <span>Игр</span>
+            <span
+                class="admin-value"
+                id="adminSpins"
+            >
+                0
+            </span>
+        </div>
+
+        <div class="admin-stat">
+            <span>Всего ставок</span>
+            <span
+                class="admin-value"
+                id="adminBets"
+            >
+                0.00
+            </span>
+        </div>
+
+        <div class="admin-stat">
+            <span>Выигрыши игроков</span>
+            <span
+                class="admin-value"
+                id="adminWins"
+            >
+                0.00
+            </span>
+        </div>
+
+        <div class="admin-stat">
+            <span>Моя комиссия</span>
+            <span
+                class="admin-value"
+                id="adminCommission"
+            >
+                0.00
+            </span>
+        </div>
+
+        <div class="admin-stat">
+            <span>Мой баланс</span>
+            <span
+                class="admin-value"
+                id="adminBalance"
+            >
+                0.00
+            </span>
+        </div>
+
+        <div class="admin-withdraw">
+
+            <input
+                id="withdrawAmount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                placeholder="Сумма"
+            >
+
+            <button id="withdraw">
+                Вывести демо
+            </button>
+
+        </div>
+
+    </div>
+
 </div>
 
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <script>
+
 const tg = window.Telegram?.WebApp;
 
 if (tg) {
+
     tg.ready();
     tg.expand();
 
@@ -769,226 +800,392 @@ if (tg) {
         tg.setHeaderColor("#09050f");
         tg.setBackgroundColor("#09050f");
     } catch (e) {}
+
 }
 
 let balance = 0;
-let bet = 50;
+let bet = 10;
 let spinning = false;
 
-const symbols = ["🍋", "7️⃣", "🍒", "💀"];
-
-const balanceEl = document.getElementById("balance");
-const betEl = document.getElementById("bet");
-const resultEl = document.getElementById("result");
-const spinEl = document.getElementById("spin");
-const errorEl = document.getElementById("error");
-const historyEl = document.getElementById("history");
-const slotCard = document.getElementById("slotCard");
-
-const reels = [
-    document.getElementById("reel1"),
-    document.getElementById("reel2"),
-    document.getElementById("reel3")
+const symbols = [
+    "🍋",
+    "7️⃣",
+    "🍒",
+    "💀"
 ];
 
-function telegramHeaders() {
-    const initData = tg?.initData || "";
+const balanceEl =
+    document.getElementById("balance");
+
+const betEl =
+    document.getElementById("bet");
+
+const resultEl =
+    document.getElementById("result");
+
+const spinEl =
+    document.getElementById("spin");
+
+const errorEl =
+    document.getElementById("error");
+
+const historyEl =
+    document.getElementById("history");
+
+const slotCard =
+    document.getElementById("slotCard");
+
+const avatarEl =
+    document.getElementById("avatar");
+
+const usernameEl =
+    document.getElementById("username");
+
+const reels = [
+
+    document.getElementById("reel1"),
+
+    document.getElementById("reel2"),
+
+    document.getElementById("reel3")
+
+];
+
+function formatMoney(value) {
+
+    return (
+        Number(value || 0) / 100
+    ).toLocaleString(
+        "ru-RU",
+        {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }
+    );
+}
+
+function toUnits(value) {
+
+    return Math.round(
+        Number(value) * 100
+    );
+}
+
+function apiHeaders() {
 
     return {
-        "Content-Type": "application/json",
-        "X-Telegram-Init-Data": initData
+
+        "Content-Type":
+            "application/json",
+
+        "X-Telegram-Init-Data":
+            tg?.initData || ""
+
     };
 }
 
-async function api(url, options = {}) {
-    const response = await fetch(url, {
-        ...options,
-        headers: {
-            ...telegramHeaders(),
-            ...(options.headers || {})
-        }
-    });
+async function api(
+    url,
+    options = {}
+) {
 
-    let data;
+    const response =
+        await fetch(
+            url,
+            {
+                ...options,
 
-    try {
-        data = await response.json();
-    } catch {
-        throw new Error("Сервер вернул некорректный ответ");
-    }
+                headers: {
+                    ...apiHeaders(),
+                    ...(options.headers || {})
+                }
+            }
+        );
 
-    if (!response.ok || data.success === false) {
-        throw new Error(data.error || "Ошибка сервера");
+    const data =
+        await response.json();
+
+    if (
+        !response.ok ||
+        data.success === false
+    ) {
+
+        throw new Error(
+            data.error ||
+            "Ошибка сервера"
+        );
     }
 
     return data;
 }
 
 function updateUI() {
-    balanceEl.textContent = balance.toLocaleString("ru-RU");
-    betEl.textContent = bet.toLocaleString("ru-RU");
 
-    document.querySelectorAll(".quick").forEach(button => {
-        button.classList.toggle(
-            "active",
-            Number(button.dataset.value) === bet
-        );
-    });
+    balanceEl.textContent =
+        formatMoney(balance);
+
+    betEl.textContent =
+        formatMoney(bet);
+
+    document
+        .querySelectorAll(".quick")
+        .forEach(button => {
+
+            button.classList.toggle(
+                "active",
+                Number(button.dataset.value) === bet
+            );
+
+        });
+
 }
 
 function showError(message) {
-    errorEl.textContent = message;
-    errorEl.classList.add("show");
 
-    clearTimeout(showError.timer);
+    errorEl.textContent =
+        message;
 
-    showError.timer = setTimeout(() => {
-        errorEl.classList.remove("show");
-    }, 3500);
-}
+    errorEl.classList.add(
+        "show"
+    );
 
-function showResult(text, type) {
-    resultEl.textContent = text;
-    resultEl.className = "result " + type;
-}
+    clearTimeout(
+        showError.timer
+    );
 
-function haptic(type) {
-    if (tg?.HapticFeedback) {
-        try {
-            tg.HapticFeedback.notificationOccurred(type);
-        } catch (e) {}
-    }
-}
-
-function animateReel(reel, finalSymbol, duration) {
-    return new Promise(resolve => {
-        reel.classList.add("spinning");
-
-        const interval = setInterval(() => {
-            reel.textContent =
-                symbols[Math.floor(Math.random() * symbols.length)];
-        }, 65);
-
+    showError.timer =
         setTimeout(() => {
-            clearInterval(interval);
 
-            reel.textContent = finalSymbol;
-            reel.classList.remove("spinning");
+            errorEl.classList.remove(
+                "show"
+            );
 
-            resolve();
-        }, duration);
-    });
+        }, 3500);
+
 }
 
-function addHistory(combo, multiplier, bet, win) {
-    const empty = historyEl.querySelector(".empty");
+function showResult(
+    text,
+    type
+) {
+
+    resultEl.textContent =
+        text;
+
+    resultEl.className =
+        "result " + type;
+
+}
+
+function animateReel(
+    reel,
+    finalSymbol,
+    duration
+) {
+
+    return new Promise(
+        resolve => {
+
+            reel.classList.add(
+                "spinning"
+            );
+
+            const interval =
+                setInterval(() => {
+
+                    reel.textContent =
+                        symbols[
+                            Math.floor(
+                                Math.random() *
+                                symbols.length
+                            )
+                        ];
+
+                }, 65);
+
+            setTimeout(() => {
+
+                clearInterval(
+                    interval
+                );
+
+                reel.textContent =
+                    finalSymbol;
+
+                reel.classList.remove(
+                    "spinning"
+                );
+
+                resolve();
+
+            }, duration);
+
+        }
+    );
+
+}
+
+function addHistory(
+    combo,
+    multiplier,
+    betAmount,
+    win
+) {
+
+    const empty =
+        historyEl.querySelector(
+            ".empty"
+        );
 
     if (empty) {
         empty.remove();
     }
 
-    const item = document.createElement("div");
-    item.className = "history-item";
+    const item =
+        document.createElement(
+            "div"
+        );
 
-    const isWin = win > 0;
+    item.className =
+        "history-item";
+
+    const isWin =
+        Number(win) > 0;
 
     item.innerHTML = `
-        <div class="history-symbols">
-            ${combo.join("")}
+
+        <div>
+
+            <div class="history-symbols">
+                ${combo.join("")}
+            </div>
+
         </div>
 
         <div class="history-right">
+
             <div class="history-bet">
-                Ставка ${bet} 💎
+                Ставка ${formatMoney(betAmount)} 💎
             </div>
 
             <div class="history-mult ${isWin ? "win" : "lose"}">
-                ${isWin ? "+" + win + " 💎" : "×0"}
+                ${isWin
+                    ? "+" + formatMoney(win) + " 💎"
+                    : "×0"
+                }
             </div>
+
         </div>
+
     `;
 
     historyEl.prepend(item);
 
-    while (historyEl.children.length > 10) {
-        historyEl.lastElementChild.remove();
-    }
 }
 
 function renderHistory(history) {
+
     historyEl.innerHTML = "";
 
-    if (!history || history.length === 0) {
+    if (
+        !history ||
+        history.length === 0
+    ) {
+
         historyEl.innerHTML =
             '<div class="empty">Здесь появятся результаты</div>';
+
         return;
     }
 
-    history.forEach(spin => {
+    history.forEach(item => {
+
         addHistory(
-            spin.combo,
-            spin.multiplier,
-            spin.bet,
-            spin.win
+            item.combo,
+            item.multiplier,
+            item.bet,
+            item.win
         );
+
     });
+
 }
 
 async function loadUser() {
-    try {
-        const data = await api("/api/me");
 
-        balance = Number(data.user.balance);
+    const data =
+        await api("/api/me");
 
-        updateUI();
+    balance =
+        Number(data.user.balance);
 
-        if (data.user.first_name && tg) {
-            const name = document.querySelector(".hero p");
+    const name =
+        data.user.username
+            ? "@" + data.user.username
+            : data.user.first_name || "Игрок";
 
-            if (name) {
-                name.textContent =
-                    `Удачи, ${data.user.first_name}!`;
-            }
-        }
+    usernameEl.textContent =
+        name;
 
-    } catch (error) {
-        console.error(error);
+    if (data.user.photo_url) {
 
-        showError(
-            "Не удалось подключиться к Telegram"
-        );
+        avatarEl.src =
+            data.user.photo_url;
+
+    } else {
+
+        avatarEl.src =
+            "https://ui-avatars.com/api/?name=" +
+            encodeURIComponent(name) +
+            "&background=7c3aed&color=fff";
+
     }
+
+    updateUI();
+
 }
 
 async function loadHistory() {
-    try {
-        const data = await api("/api/history");
 
-        renderHistory(data.history);
+    const data =
+        await api("/api/history");
 
-    } catch (error) {
-        console.error(error);
-    }
+    renderHistory(
+        data.history
+    );
+
 }
 
 async function spin() {
+
     if (spinning) {
         return;
     }
 
-    if (!Number.isInteger(bet) || bet < 10) {
-        showError("Минимальная ставка — 10");
+    if (bet < 1) {
+
+        showError(
+            "Минимальная ставка — 0.01"
+        );
+
         return;
     }
 
     if (bet > balance) {
-        showError("Недостаточно 💎");
+
+        showError(
+            "Недостаточно 💎"
+        );
+
         return;
     }
 
     spinning = true;
+
     spinEl.disabled = true;
-    spinEl.textContent = "⏳ ВРАЩЕНИЕ...";
+
+    spinEl.textContent =
+        "⏳ ВРАЩЕНИЕ...";
 
     showResult(
         "Барабаны вращаются...",
@@ -996,213 +1193,548 @@ async function spin() {
     );
 
     try {
-        /*
-         * ВАЖНО:
-         * результат выбирает сервер.
-         * Клиент отправляет только размер ставки.
-         */
-        const data = await api("/api/spin", {
-            method: "POST",
-            body: JSON.stringify({
-                bet
-            })
-        });
 
-        const result = data.result;
+        const data =
+            await api(
+                "/api/spin",
+                {
+                    method: "POST",
 
-        /*
-         * Сервер уже определил комбинацию.
-         * Здесь только красиво её показываем.
-         */
+                    body:
+                        JSON.stringify({
+                            bet
+                        })
+                }
+            );
+
+        const result =
+            data.result;
+
         await animateReel(
             reels[0],
             result.combo[0],
-            800
+            700
         );
 
         await animateReel(
             reels[1],
             result.combo[1],
-            1050
+            900
         );
 
         await animateReel(
             reels[2],
             result.combo[2],
-            1300
+            1100
         );
 
-        balance = Number(data.balance);
+        balance =
+            Number(data.balance);
 
         updateUI();
 
         if (result.win > 0) {
+
             showResult(
-                `🎉 ×${result.multiplier}  +${result.win} 💎`,
+                `🎉 ×${result.multiplier} +${formatMoney(result.win)} 💎`,
                 "win"
             );
 
-            slotCard.classList.remove("win-animation");
+            slotCard.classList.remove(
+                "win-animation"
+            );
 
             void slotCard.offsetWidth;
 
-            slotCard.classList.add("win-animation");
+            slotCard.classList.add(
+                "win-animation"
+            );
 
-            haptic("success");
+            if (
+                tg?.HapticFeedback
+            ) {
+
+                tg.HapticFeedback
+                    .notificationOccurred(
+                        "success"
+                    );
+            }
 
         } else {
+
             showResult(
-                "💀 Не повезло — ставка сгорела",
+                "💀 Не повезло",
                 "lose"
             );
 
-            haptic("error");
         }
 
-        /*
-         * Перезагружаем историю с сервера,
-         * чтобы интерфейс совпадал с базой.
-         */
         await loadHistory();
 
     } catch (error) {
-        console.error("SPIN ERROR:", error);
+
+        console.error(error);
 
         showError(
-            error.message || "Ошибка сервера"
+            error.message ||
+            "Ошибка"
         );
+
+    } finally {
+
+        spinning = false;
+
+        spinEl.disabled = false;
+
+        spinEl.textContent =
+            "🎰 КРУТИТЬ";
+
     }
 
-    spinning = false;
-    spinEl.disabled = false;
-    spinEl.textContent = "🎰 КРУТИТЬ";
 }
 
+/*
+|--------------------------------------------------------------------------
+| DEMO DEPOSIT
+|--------------------------------------------------------------------------
+*/
+
+async function deposit(amount) {
+
+    try {
+
+        const data =
+            await api(
+                "/api/demo/deposit",
+                {
+                    method: "POST",
+
+                    body:
+                        JSON.stringify({
+                            amount:
+                                toUnits(amount)
+                        })
+                }
+            );
+
+        balance =
+            Number(data.balance);
+
+        updateUI();
+
+        showResult(
+            `+${Number(amount).toFixed(2)} 💎`,
+            "win"
+        );
+
+    } catch (error) {
+
+        showError(
+            error.message
+        );
+
+    }
+
+}
+
+/*
+|--------------------------------------------------------------------------
+| PAYTABLE
+|--------------------------------------------------------------------------
+*/
+
 function renderPaytable() {
+
     const paytable =
-        document.getElementById("paytable");
-
-    /*
-     * Таблица выплат соответствует серверной
-     * конфигурации.
-     */
-    const combinations = [
-        [["🍋","🍋","🍋"], 3],
-        [["7️⃣","7️⃣","7️⃣"], 5],
-        [["🍒","🍒","🍒"], 2],
-        [["💀","💀","💀"], 0],
-
-        [["🍋","🍋","7️⃣"], 1.8],
-        [["🍋","🍋","🍒"], 1.7],
-        [["🍋","🍋","💀"], 1.6],
-
-        [["🍋","7️⃣","7️⃣"], 2.9],
-        [["🍋","🍒","🍒"], 1.9],
-        [["🍋","💀","💀"], 0],
-
-        [["🍋","7️⃣","🍒"], 0],
-        [["🍋","7️⃣","💀"], 0],
-        [["🍋","🍒","💀"], 0],
-
-        [["7️⃣","7️⃣","🍋"], 2.9],
-        [["7️⃣","7️⃣","🍒"], 2.5],
-        [["7️⃣","7️⃣","💀"], 1.9],
-
-        [["7️⃣","🍋","🍋"], 2.7],
-        [["7️⃣","🍒","🍒"], 2.7],
-        [["7️⃣","💀","💀"], 0],
-
-        [["🍒","🍒","🍋"], 1.7],
-        [["🍒","🍒","7️⃣"], 1.8],
-        [["🍒","🍒","💀"], 1.5],
-
-        [["🍒","🍋","🍋"], 1.8],
-        [["🍒","7️⃣","7️⃣"], 1.9],
-        [["🍒","💀","💀"], 0]
-    ];
+        document.getElementById(
+            "paytable"
+        );
 
     paytable.innerHTML = "";
 
-    combinations.forEach(([combo, multiplier]) => {
-        const row = document.createElement("div");
+    for (const a of symbols) {
 
-        row.className = "pay-row";
+        for (const b of symbols) {
 
-        row.innerHTML = `
-            <div class="pay-combo">
-                ${combo.join("")}
-            </div>
+            for (const c of symbols) {
 
-            <div class="pay-mult">
-                ×${multiplier}
-            </div>
-        `;
+                let multiplier = 0;
 
-        paytable.appendChild(row);
-    });
+                if (
+                    a === b &&
+                    b === c
+                ) {
+
+                    if (a === "7️⃣") {
+                        multiplier = 4;
+                    } else if (a === "🍋") {
+                        multiplier = 2.5;
+                    } else if (a === "🍒") {
+                        multiplier = 2;
+                    }
+
+                } else {
+
+                    const counts = {};
+
+                    [a,b,c].forEach(s => {
+                        counts[s] =
+                            (counts[s] || 0) + 1;
+                    });
+
+                    const max =
+                        Math.max(
+                            ...Object.values(counts)
+                        );
+
+                    if (max === 2) {
+
+                        if (
+                            counts["7️⃣"] === 2
+                        ) {
+                            multiplier = 1.4;
+
+                        } else if (
+                            counts["🍋"] === 2
+                        ) {
+                            multiplier = 1.15;
+
+                        } else if (
+                            counts["🍒"] === 2
+                        ) {
+                            multiplier = 1.1;
+                        }
+
+                    } else {
+
+                        if (
+                            a === "🍋" &&
+                            b === "🍒" &&
+                            c === "🍋"
+                        ) {
+                            multiplier = 0.5;
+                        }
+                    }
+                }
+
+                const row =
+                    document.createElement(
+                        "div"
+                    );
+
+                row.className =
+                    "pay-row";
+
+                row.innerHTML = `
+
+                    <div>
+                        ${a}${b}${c}
+                    </div>
+
+                    <div class="pay-mult">
+                        ×${multiplier}
+                    </div>
+
+                `;
+
+                paytable.appendChild(row);
+
+            }
+
+        }
+
+    }
+
 }
+
+/*
+|--------------------------------------------------------------------------
+| ADMIN
+|--------------------------------------------------------------------------
+*/
+
+async function loadAdmin() {
+
+    try {
+
+        const data =
+            await api(
+                "/api/admin/stats"
+            );
+
+        document
+            .getElementById("admin")
+            .classList.add("show");
+
+        document
+            .getElementById("adminTitle")
+            .style.display = "block";
+
+        const stats =
+            data.stats;
+
+        document
+            .getElementById("adminUsers")
+            .textContent =
+            stats.totalUsers;
+
+        document
+            .getElementById("adminSpins")
+            .textContent =
+            stats.totalSpins;
+
+        document
+            .getElementById("adminBets")
+            .textContent =
+            formatMoney(stats.totalBets);
+
+        document
+            .getElementById("adminWins")
+            .textContent =
+            formatMoney(stats.totalPlayerWins);
+
+        document
+            .getElementById("adminCommission")
+            .textContent =
+            formatMoney(stats.totalCommission);
+
+        document
+            .getElementById("adminBalance")
+            .textContent =
+            formatMoney(stats.adminBalance);
+
+    } catch {
+
+        /*
+         * Обычному игроку админская панель
+         * не показывается.
+         */
+
+    }
+
+}
+
+/*
+|--------------------------------------------------------------------------
+| EVENTS
+|--------------------------------------------------------------------------
+*/
 
 document
     .getElementById("minus")
-    .addEventListener("click", () => {
-        if (spinning) return;
+    .addEventListener(
+        "click",
+        () => {
 
-        bet = Math.max(10, bet - 10);
+            if (spinning) return;
 
-        if (balance >= 10 && bet > balance) {
-            bet = Math.floor(balance / 10) * 10;
+            bet =
+                Math.max(
+                    1,
+                    bet - 1
+                );
+
+            updateUI();
+
         }
-
-        updateUI();
-    });
+    );
 
 document
     .getElementById("plus")
-    .addEventListener("click", () => {
-        if (spinning) return;
+    .addEventListener(
+        "click",
+        () => {
 
-        const newBet = bet + 10;
+            if (spinning) return;
 
-        if (newBet <= 100000 && newBet <= balance) {
-            bet = newBet;
+            if (
+                bet + 1 <= balance
+            ) {
+
+                bet += 1;
+
+            }
+
+            updateUI();
+
         }
-
-        updateUI();
-    });
+    );
 
 document
     .querySelectorAll(".quick")
     .forEach(button => {
-        button.addEventListener("click", () => {
-            if (spinning) return;
 
-            const value =
-                Number(button.dataset.value);
+        button.addEventListener(
+            "click",
+            () => {
 
-            if (value > balance) {
-                showError("Недостаточно очков");
+                if (spinning) return;
+
+                const value =
+                    Number(
+                        button.dataset.value
+                    );
+
+                if (value > balance) {
+
+                    showError(
+                        "Недостаточно 💎"
+                    );
+
+                    return;
+                }
+
+                bet = value;
+
+                updateUI();
+
+            }
+        );
+
+    });
+
+spinEl.addEventListener(
+    "click",
+    spin
+);
+
+document
+    .getElementById("deposit")
+    .addEventListener(
+        "click",
+        () => {
+
+            const amount =
+                Number(
+                    document
+                        .getElementById(
+                            "depositAmount"
+                        )
+                        .value
+                );
+
+            if (
+                !amount ||
+                amount < 0.01
+            ) {
+
+                showError(
+                    "Минимум 0.01"
+                );
+
                 return;
             }
 
-            bet = value;
-            updateUI();
-        });
-    });
+            deposit(amount);
 
-spinEl.addEventListener("click", spin);
+        }
+    );
 
-renderPaytable();
-updateUI();
+document
+    .getElementById("deposit10")
+    .addEventListener(
+        "click",
+        () => deposit(10)
+    );
+
+document
+    .getElementById("withdraw")
+    .addEventListener(
+        "click",
+        async () => {
+
+            const amount =
+                Number(
+                    document
+                        .getElementById(
+                            "withdrawAmount"
+                        )
+                        .value
+                );
+
+            if (
+                !amount ||
+                amount <= 0
+            ) {
+
+                showError(
+                    "Введите сумму"
+                );
+
+                return;
+            }
+
+            try {
+
+                const data =
+                    await api(
+                        "/api/admin/demo-withdraw",
+                        {
+                            method: "POST",
+
+                            body:
+                                JSON.stringify({
+                                    amount:
+                                        toUnits(amount)
+                                })
+                        }
+                    );
+
+                document
+                    .getElementById(
+                        "adminBalance"
+                    )
+                    .textContent =
+                    formatMoney(
+                        data.adminBalance
+                    );
+
+            } catch (error) {
+
+                showError(
+                    error.message
+                );
+
+            }
+
+        }
+    );
 
 /*
- * Запускаем загрузку пользователя и истории
- * только после загрузки Telegram WebApp.
- */
+|--------------------------------------------------------------------------
+| START
+|--------------------------------------------------------------------------
+*/
+
+renderPaytable();
+
+updateUI();
+
 (async () => {
-    await loadUser();
-    await loadHistory();
+
+    try {
+
+        await loadUser();
+
+        await loadHistory();
+
+        await loadAdmin();
+
+    } catch (error) {
+
+        console.error(error);
+
+        showError(
+            error.message ||
+            "Не удалось загрузить приложение"
+        );
+
+    }
+
 })();
+
 </script>
 
 </body>
+
 </html>
