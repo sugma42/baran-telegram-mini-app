@@ -64,7 +64,11 @@ button {
 }
 
 button:disabled {
-    cursor: not-allowed;
+    cursor: default;
+}
+
+input {
+    font-family: inherit;
 }
 
 .app {
@@ -178,30 +182,6 @@ button:disabled {
         inset 0 1px rgba(255,255,255,.08);
 }
 
-.slot-card.win-animation {
-    animation: winPulse .5s ease;
-}
-
-@keyframes winPulse {
-
-    0% {
-        transform: scale(1);
-        box-shadow:
-            0 25px 70px rgba(0,0,0,.45);
-    }
-
-    50% {
-        transform: scale(1.025);
-        box-shadow:
-            0 0 45px rgba(168,85,247,.55);
-    }
-
-    100% {
-        transform: scale(1);
-    }
-
-}
-
 .slot-label {
     text-align: center;
     margin-bottom: 12px;
@@ -300,8 +280,8 @@ button:disabled {
     font-size: 24px;
 }
 
-.bet-button:disabled {
-    opacity: .5;
+.bet-button:active {
+    background: rgba(139,92,246,.25);
 }
 
 .bet-center {
@@ -342,10 +322,6 @@ button:disabled {
     background: rgba(139,92,246,.23);
 }
 
-.quick:disabled {
-    opacity: .5;
-}
-
 .spin {
     width: 100%;
     height: 59px;
@@ -383,7 +359,7 @@ button:disabled {
     outline: none;
     color: white;
     background: rgba(255,255,255,.05);
-    font-size: 15px;
+    font-size: 14px;
 }
 
 .deposit-input:focus {
@@ -397,6 +373,10 @@ button:disabled {
     color: white;
     background: rgba(139,92,246,.3);
     font-weight: 800;
+}
+
+.deposit-button:active {
+    background: rgba(139,92,246,.5);
 }
 
 .deposit-button:disabled {
@@ -525,6 +505,33 @@ button:disabled {
     background: #6d28d9;
 }
 
+.admin-withdraw button:disabled {
+    opacity: .5;
+}
+
+.win-animation {
+    animation: winPulse .55s ease;
+}
+
+@keyframes winPulse {
+
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.025);
+        box-shadow:
+            0 0 35px
+            rgba(168,85,247,.45);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+
+}
+
 </style>
 
 </head>
@@ -601,26 +608,9 @@ button:disabled {
 
         <div class="reels">
 
-            <div
-                class="reel"
-                id="reel1"
-            >
-                🍋
-            </div>
-
-            <div
-                class="reel"
-                id="reel2"
-            >
-                7️⃣
-            </div>
-
-            <div
-                class="reel"
-                id="reel3"
-            >
-                🍒
-            </div>
+            <div class="reel" id="reel1">🍋</div>
+            <div class="reel" id="reel2">7️⃣</div>
+            <div class="reel" id="reel3">🍒</div>
 
         </div>
 
@@ -642,6 +632,7 @@ button:disabled {
         <button
             class="bet-button"
             id="minus"
+            type="button"
         >
             −
         </button>
@@ -661,6 +652,7 @@ button:disabled {
         <button
             class="bet-button"
             id="plus"
+            type="button"
         >
             +
         </button>
@@ -676,6 +668,7 @@ button:disabled {
         <button
             class="quick"
             data-value="1"
+            type="button"
         >
             0.01
         </button>
@@ -683,6 +676,7 @@ button:disabled {
         <button
             class="quick active"
             data-value="10"
+            type="button"
         >
             0.10
         </button>
@@ -690,6 +684,7 @@ button:disabled {
         <button
             class="quick"
             data-value="100"
+            type="button"
         >
             1.00
         </button>
@@ -697,6 +692,7 @@ button:disabled {
         <button
             class="quick"
             data-value="1000"
+            type="button"
         >
             10.00
         </button>
@@ -706,6 +702,7 @@ button:disabled {
     <button
         class="spin"
         id="spin"
+        type="button"
     >
         🎰 КРУТИТЬ
     </button>
@@ -729,6 +726,7 @@ button:disabled {
         <button
             class="deposit-button"
             id="deposit"
+            type="button"
         >
             + Пополнить
         </button>
@@ -736,6 +734,7 @@ button:disabled {
         <button
             class="deposit-button"
             id="deposit10"
+            type="button"
         >
             +10.00
         </button>
@@ -750,11 +749,9 @@ button:disabled {
         class="history"
         id="history"
     >
-
         <div class="empty">
             Здесь появятся результаты
         </div>
-
     </div>
 
     <div class="section-title">
@@ -784,93 +781,63 @@ button:disabled {
         </div>
 
         <div class="admin-stat">
-
-            <span>
-                Игроков
-            </span>
-
+            <span>Игроков</span>
             <span
                 class="admin-value"
                 id="adminUsers"
             >
                 0
             </span>
-
         </div>
 
         <div class="admin-stat">
-
-            <span>
-                Игр
-            </span>
-
+            <span>Игр</span>
             <span
                 class="admin-value"
                 id="adminSpins"
             >
                 0
             </span>
-
         </div>
 
         <div class="admin-stat">
-
-            <span>
-                Всего ставок
-            </span>
-
+            <span>Всего ставок</span>
             <span
                 class="admin-value"
                 id="adminBets"
             >
                 0.00
             </span>
-
         </div>
 
         <div class="admin-stat">
-
-            <span>
-                Выигрыши игроков
-            </span>
-
+            <span>Выигрыши игроков</span>
             <span
                 class="admin-value"
                 id="adminWins"
             >
                 0.00
             </span>
-
         </div>
 
         <div class="admin-stat">
-
-            <span>
-                Моя комиссия
-            </span>
-
+            <span>Моя комиссия</span>
             <span
                 class="admin-value"
                 id="adminCommission"
             >
                 0.00
             </span>
-
         </div>
 
         <div class="admin-stat">
-
-            <span>
-                Мой баланс
-            </span>
-
+            <span>Мой баланс</span>
             <span
                 class="admin-value"
                 id="adminBalance"
             >
                 0.00
             </span>
-
         </div>
 
         <div class="admin-withdraw">
@@ -883,7 +850,10 @@ button:disabled {
                 placeholder="Сумма"
             >
 
-            <button id="withdraw">
+            <button
+                id="withdraw"
+                type="button"
+            >
                 Вывести демо
             </button>
 
@@ -906,7 +876,7 @@ button:disabled {
 */
 
 const tg =
-    window.Telegram?.WebApp || null;
+    window.Telegram?.WebApp;
 
 if (tg) {
 
@@ -924,11 +894,11 @@ if (tg) {
             "#09050f"
         );
 
-    } catch (error) {
+    } catch (e) {
 
         console.warn(
-            "Telegram color error:",
-            error
+            "Telegram UI settings error:",
+            e
         );
 
     }
@@ -954,15 +924,10 @@ let spinning = false;
 */
 
 const symbols = [
-
     "🍋",
-
     "7️⃣",
-
     "🍒",
-
     "💀"
-
 ];
 
 /*
@@ -1016,6 +981,21 @@ const usernameEl =
         "username"
     );
 
+const depositButton =
+    document.getElementById(
+        "deposit"
+    );
+
+const deposit10Button =
+    document.getElementById(
+        "deposit10"
+    );
+
+const depositAmountEl =
+    document.getElementById(
+        "depositAmount"
+    );
+
 const reels = [
 
     document.getElementById(
@@ -1036,10 +1016,6 @@ const reels = [
 |--------------------------------------------------------------------------
 | MONEY
 |--------------------------------------------------------------------------
-|
-| 100 units = 1.00
-|
-|--------------------------------------------------------------------------
 */
 
 function formatMoney(value) {
@@ -1058,29 +1034,30 @@ function formatMoney(value) {
 
 function toUnits(value) {
 
+    const number =
+        Number(value);
+
+    if (
+        !Number.isFinite(number)
+    ) {
+
+        return 0;
+
+    }
+
     return Math.round(
-        Number(value) * 100
+        number * 100
     );
 
 }
 
 /*
 |--------------------------------------------------------------------------
-| TELEGRAM HEADERS
+| API HEADERS
 |--------------------------------------------------------------------------
 */
 
 function apiHeaders() {
-
-    const initData =
-        tg?.initData || "";
-
-    console.log(
-        "Telegram initData:",
-        initData
-            ? "получен"
-            : "НЕ ПОЛУЧЕН"
-    );
 
     return {
 
@@ -1088,7 +1065,7 @@ function apiHeaders() {
             "application/json",
 
         "X-Telegram-Init-Data":
-            initData
+            tg?.initData || ""
 
     };
 
@@ -1112,13 +1089,9 @@ async function api(
                 ...options,
 
                 headers: {
-
                     ...apiHeaders(),
-
                     ...(options.headers || {})
-
                 }
-
             }
         );
 
@@ -1162,34 +1135,23 @@ async function api(
 function updateUI() {
 
     balanceEl.textContent =
-        formatMoney(
-            balance
-        );
+        formatMoney(balance);
 
     betEl.textContent =
-        formatMoney(
-            bet
-        );
+        formatMoney(bet);
 
     document
-        .querySelectorAll(
-            ".quick"
-        )
-        .forEach(
-            button => {
+        .querySelectorAll(".quick")
+        .forEach(button => {
 
-                button.classList.toggle(
+            button.classList.toggle(
+                "active",
+                Number(
+                    button.dataset.value
+                ) === bet
+            );
 
-                    "active",
-
-                    Number(
-                        button.dataset.value
-                    ) === bet
-
-                );
-
-            }
-        );
+        });
 
 }
 
@@ -1199,9 +1161,7 @@ function updateUI() {
 |--------------------------------------------------------------------------
 */
 
-function showError(
-    message
-) {
+function showError(message) {
 
     errorEl.textContent =
         message;
@@ -1223,7 +1183,7 @@ function showError(
                 );
 
             },
-            4000
+            3500
         );
 
 }
@@ -1358,20 +1318,12 @@ function addHistory(
                 Ставка ${formatMoney(betAmount)} 💎
             </div>
 
-            <div class="history-mult ${
-                isWin
-                    ? "win"
-                    : "lose"
-            }">
-
+            <div class="history-mult ${isWin ? "win" : "lose"}">
                 ${
                     isWin
-                        ? "+" +
-                          formatMoney(win) +
-                          " 💎"
+                        ? "+" + formatMoney(win) + " 💎"
                         : "×0"
                 }
-
             </div>
 
         </div>
@@ -1384,9 +1336,7 @@ function addHistory(
 
 }
 
-function renderHistory(
-    history
-) {
+function renderHistory(history) {
 
     historyEl.innerHTML = "";
 
@@ -1402,26 +1352,24 @@ function renderHistory(
 
     }
 
-    history
-        .slice()
+    /*
+     * Сервер отдаёт новые игры первыми.
+     * Поэтому добавляем их в обратном порядке,
+     * чтобы последняя игра была сверху.
+     */
+
+    [...history]
         .reverse()
-        .forEach(
-            item => {
+        .forEach(item => {
 
-                addHistory(
+            addHistory(
+                item.combo,
+                item.multiplier,
+                item.bet,
+                item.win
+            );
 
-                    item.combo,
-
-                    item.multiplier,
-
-                    item.bet,
-
-                    item.win
-
-                );
-
-            }
-        );
+        });
 
 }
 
@@ -1438,15 +1386,19 @@ async function loadUser() {
             "/api/me"
         );
 
+    console.log(
+        "👤 USER:",
+        data
+    );
+
     balance =
         Number(
-            data.user.balance
+            data.user.balance || 0
         );
 
     const name =
         data.user.username
-            ? "@" +
-              data.user.username
+            ? "@" + data.user.username
             : data.user.first_name ||
               "Игрок";
 
@@ -1464,9 +1416,7 @@ async function loadUser() {
 
         avatarEl.src =
             "https://ui-avatars.com/api/?name=" +
-            encodeURIComponent(
-                name
-            ) +
+            encodeURIComponent(name) +
             "&background=7c3aed&color=fff";
 
     }
@@ -1530,7 +1480,8 @@ async function spin() {
 
     spinning = true;
 
-    spinEl.disabled = true;
+    spinEl.disabled =
+        true;
 
     spinEl.textContent =
         "⏳ ВРАЩЕНИЕ...";
@@ -1544,25 +1495,21 @@ async function spin() {
 
         const data =
             await api(
-
                 "/api/spin",
-
                 {
-
-                    method:
-                        "POST",
+                    method: "POST",
 
                     body:
                         JSON.stringify({
-
-                            bet:
-                                bet
-
+                            bet
                         })
-
                 }
-
             );
+
+        console.log(
+            "🎰 SPIN:",
+            data
+        );
 
         const result =
             data.result;
@@ -1587,7 +1534,7 @@ async function spin() {
 
         balance =
             Number(
-                data.balance
+                data.balance || 0
             );
 
         updateUI();
@@ -1597,11 +1544,8 @@ async function spin() {
         ) {
 
             showResult(
-
                 `🎉 ×${result.multiplier} +${formatMoney(result.win)} 💎`,
-
                 "win"
-
             );
 
             slotCard.classList.remove(
@@ -1652,7 +1596,8 @@ async function spin() {
 
         spinning = false;
 
-        spinEl.disabled = false;
+        spinEl.disabled =
+            false;
 
         spinEl.textContent =
             "🎰 КРУТИТЬ";
@@ -1663,13 +1608,19 @@ async function spin() {
 
 /*
 |--------------------------------------------------------------------------
-| DEMO DEPOSIT
+| DEPOSIT
+|--------------------------------------------------------------------------
+|
+| ВАЖНО:
+| amount отправляется в сотых единицах.
+|
+| 0.01 -> 1
+| 1.00 -> 100
+| 10.00 -> 1000
 |--------------------------------------------------------------------------
 */
 
-async function deposit(
-    amount
-) {
+async function deposit(amount) {
 
     if (spinning) {
 
@@ -1677,28 +1628,18 @@ async function deposit(
 
     }
 
-    amount =
+    const numericAmount =
         Number(amount);
 
     if (
-        !Number.isFinite(amount) ||
-        amount < 0.01
+        !Number.isFinite(
+            numericAmount
+        ) ||
+        numericAmount < 0.01
     ) {
 
         showError(
-            "Минимум 0.01"
-        );
-
-        return;
-
-    }
-
-    if (
-        amount > 100000
-    ) {
-
-        showError(
-            "Слишком большая сумма"
+            "Минимум 0.01 💎"
         );
 
         return;
@@ -1706,19 +1647,22 @@ async function deposit(
     }
 
     const units =
-        Math.round(
-            amount * 100
+        toUnits(
+            numericAmount
         );
 
-    const depositButton =
-        document.getElementById(
-            "deposit"
+    if (
+        !Number.isInteger(units) ||
+        units < 1
+    ) {
+
+        showError(
+            "Некорректная сумма"
         );
 
-    const deposit10Button =
-        document.getElementById(
-            "deposit10"
-        );
+        return;
+
+    }
 
     depositButton.disabled =
         true;
@@ -1726,55 +1670,33 @@ async function deposit(
     deposit10Button.disabled =
         true;
 
-    const oldText =
-        depositButton.textContent;
-
-    depositButton.textContent =
-        "⏳ Пополнение...";
-
-    errorEl.classList.remove(
-        "show"
-    );
-
     try {
 
         console.log(
-            "Sending deposit:",
+            "💰 DEPOSIT:",
             {
-                amount:
-                    amount,
-
-                units:
-                    units,
-
-                initData:
-                    tg?.initData
-                        ? "YES"
-                        : "NO"
+                amount: numericAmount,
+                units
             }
         );
 
         const data =
             await api(
-
                 "/api/demo/deposit",
-
                 {
-
-                    method:
-                        "POST",
+                    method: "POST",
 
                     body:
                         JSON.stringify({
-
-                            amount:
-                                units
-
+                            amount: units
                         })
-
                 }
-
             );
+
+        console.log(
+            "💰 DEPOSIT RESPONSE:",
+            data
+        );
 
         if (
             !data.success
@@ -1787,20 +1709,30 @@ async function deposit(
 
         }
 
+        /*
+         * Берём баланс,
+         * который вернул сервер.
+         */
+
         balance =
             Number(
-                data.balance
+                data.balance || 0
             );
 
         updateUI();
 
         showResult(
-
             `+${formatMoney(units)} 💎`,
-
             "win"
-
         );
+
+        /*
+         * Дополнительная проверка:
+         * повторно читаем пользователя
+         * прямо из БД через /api/me.
+         */
+
+        await loadUser();
 
         if (
             tg?.HapticFeedback
@@ -1816,15 +1748,13 @@ async function deposit(
     } catch (error) {
 
         console.error(
-            "DEPOSIT FRONTEND ERROR:",
+            "DEPOSIT ERROR:",
             error
         );
 
         showError(
-
             error.message ||
-            "Не удалось пополнить баланс"
-
+            "Ошибка пополнения"
         );
 
     } finally {
@@ -1835,9 +1765,6 @@ async function deposit(
         deposit10Button.disabled =
             false;
 
-        depositButton.textContent =
-            oldText;
-
     }
 
 }
@@ -1847,118 +1774,6 @@ async function deposit(
 | PAYTABLE
 |--------------------------------------------------------------------------
 */
-
-function getMultiplier(
-    a,
-    b,
-    c
-) {
-
-    let multiplier = 0;
-
-    if (
-        a === b &&
-        b === c
-    ) {
-
-        if (
-            a === "7️⃣"
-        ) {
-
-            multiplier = 4;
-
-        } else if (
-            a === "🍋"
-        ) {
-
-            multiplier = 2.5;
-
-        } else if (
-            a === "🍒"
-        ) {
-
-            multiplier = 2;
-
-        }
-
-    } else {
-
-        const counts = {};
-
-        [
-            a,
-            b,
-            c
-        ].forEach(
-            symbol => {
-
-                counts[symbol] =
-                    (
-                        counts[symbol] ||
-                        0
-                    ) + 1;
-
-            }
-        );
-
-        const max =
-            Math.max(
-                ...Object.values(
-                    counts
-                )
-            );
-
-        if (
-            max === 2
-        ) {
-
-            if (
-                counts["7️⃣"] === 2
-            ) {
-
-                multiplier = 1.4;
-
-            } else if (
-                counts["🍋"] === 2
-            ) {
-
-                multiplier = 1.15;
-
-            } else if (
-                counts["🍒"] === 2
-            ) {
-
-                multiplier = 1.1;
-
-            }
-
-        } else {
-
-            if (
-                a === "🍋" &&
-                b === "🍒" &&
-                c === "🍋"
-            ) {
-
-                multiplier = 0.5;
-
-            } else if (
-                a === "🍒" &&
-                b === "🍋" &&
-                c === "🍒"
-            ) {
-
-                multiplier = 0.5;
-
-            }
-
-        }
-
-    }
-
-    return multiplier;
-
-}
 
 function renderPaytable() {
 
@@ -1981,12 +1796,99 @@ function renderPaytable() {
                 const c of symbols
             ) {
 
-                const multiplier =
-                    getMultiplier(
+                let multiplier = 0;
+
+                if (
+                    a === b &&
+                    b === c
+                ) {
+
+                    if (
+                        a === "7️⃣"
+                    ) {
+
+                        multiplier = 4;
+
+                    } else if (
+                        a === "🍋"
+                    ) {
+
+                        multiplier = 2.5;
+
+                    } else if (
+                        a === "🍒"
+                    ) {
+
+                        multiplier = 2;
+
+                    }
+
+                } else {
+
+                    const counts = {};
+
+                    [
                         a,
                         b,
                         c
+                    ].forEach(
+                        s => {
+
+                            counts[s] =
+                                (
+                                    counts[s] ||
+                                    0
+                                ) + 1;
+
+                        }
                     );
+
+                    const max =
+                        Math.max(
+                            ...Object.values(
+                                counts
+                            )
+                        );
+
+                    if (
+                        max === 2
+                    ) {
+
+                        if (
+                            counts["7️⃣"] === 2
+                        ) {
+
+                            multiplier = 1.4;
+
+                        } else if (
+                            counts["🍋"] === 2
+                        ) {
+
+                            multiplier = 1.15;
+
+                        } else if (
+                            counts["🍒"] === 2
+                        ) {
+
+                            multiplier = 1.1;
+
+                        }
+
+                    } else {
+
+                        if (
+                            a === "🍋" &&
+                            b === "🍒" &&
+                            c === "🍋"
+                        ) {
+
+                            multiplier = 0.5;
+
+                        }
+
+                    }
+
+                }
 
                 const row =
                     document.createElement(
@@ -2058,22 +1960,14 @@ async function loadAdmin() {
                 "adminUsers"
             )
             .textContent =
-            Number(
-                stats.totalUsers || 0
-            ).toLocaleString(
-                "ru-RU"
-            );
+            stats.totalUsers;
 
         document
             .getElementById(
                 "adminSpins"
             )
             .textContent =
-            Number(
-                stats.totalSpins || 0
-            ).toLocaleString(
-                "ru-RU"
-            );
+            stats.totalSpins;
 
         document
             .getElementById(
@@ -2114,13 +2008,12 @@ async function loadAdmin() {
     } catch (error) {
 
         /*
-         * Обычный игрок
-         * админскую панель
-         * не увидит.
+         * Обычному игроку админская панель
+         * не показывается.
          */
 
         console.log(
-            "Admin:",
+            "Admin access:",
             error.message
         );
 
@@ -2130,7 +2023,7 @@ async function loadAdmin() {
 
 /*
 |--------------------------------------------------------------------------
-| BET CONTROLS
+| EVENTS
 |--------------------------------------------------------------------------
 */
 
@@ -2174,8 +2067,7 @@ document
             }
 
             if (
-                bet + 1 <=
-                balance
+                bet + 1 <= balance
             ) {
 
                 bet += 1;
@@ -2186,12 +2078,6 @@ document
 
         }
     );
-
-/*
-|--------------------------------------------------------------------------
-| QUICK BETS
-|--------------------------------------------------------------------------
-*/
 
 document
     .querySelectorAll(
@@ -2238,12 +2124,6 @@ document
         }
     );
 
-/*
-|--------------------------------------------------------------------------
-| SPIN BUTTON
-|--------------------------------------------------------------------------
-*/
-
 spinEl.addEventListener(
     "click",
     spin
@@ -2255,51 +2135,53 @@ spinEl.addEventListener(
 |--------------------------------------------------------------------------
 */
 
-document
-    .getElementById(
-        "deposit"
-    )
-    .addEventListener(
-        "click",
-        () => {
+depositButton.addEventListener(
+    "click",
+    () => {
 
-            const input =
-                document.getElementById(
-                    "depositAmount"
-                );
-
-            const amount =
-                Number(
-                    input.value
-                );
-
-            deposit(
-                amount
+        const amount =
+            Number(
+                depositAmountEl.value
             );
 
+        if (
+            !Number.isFinite(
+                amount
+            ) ||
+            amount < 0.01
+        ) {
+
+            showError(
+                "Минимум 0.01"
+            );
+
+            return;
+
         }
-    );
+
+        deposit(
+            amount
+        );
+
+    }
+);
 
 /*
 |--------------------------------------------------------------------------
-| QUICK +10 DEPOSIT
+| +10
 |--------------------------------------------------------------------------
 */
 
-document
-    .getElementById(
-        "deposit10"
-    )
-    .addEventListener(
-        "click",
-        () => {
+deposit10Button.addEventListener(
+    "click",
+    () => {
 
-            deposit(
-                10
-            );
+        deposit(
+            10
+        );
 
-        }
-    );
+    }
+);
 
 /*
 |--------------------------------------------------------------------------
@@ -2315,6 +2197,11 @@ document
         "click",
         async () => {
 
+            const withdrawButton =
+                document.getElementById(
+                    "withdraw"
+                );
+
             const amount =
                 Number(
                     document
@@ -2325,7 +2212,9 @@ document
                 );
 
             if (
-                !amount ||
+                !Number.isFinite(
+                    amount
+                ) ||
                 amount <= 0
             ) {
 
@@ -2337,30 +2226,25 @@ document
 
             }
 
+            withdrawButton.disabled =
+                true;
+
             try {
 
                 const data =
                     await api(
-
                         "/api/admin/demo-withdraw",
-
                         {
-
-                            method:
-                                "POST",
+                            method: "POST",
 
                             body:
                                 JSON.stringify({
-
                                     amount:
                                         toUnits(
                                             amount
                                         )
-
                                 })
-
                         }
-
                     );
 
                 document
@@ -2374,9 +2258,19 @@ document
 
             } catch (error) {
 
+                console.error(
+                    "WITHDRAW ERROR:",
+                    error
+                );
+
                 showError(
                     error.message
                 );
+
+            } finally {
+
+                withdrawButton.disabled =
+                    false;
 
             }
 
@@ -2406,15 +2300,13 @@ updateUI();
     } catch (error) {
 
         console.error(
-            "START ERROR:",
+            "APP START ERROR:",
             error
         );
 
         showError(
-
             error.message ||
             "Не удалось загрузить приложение"
-
         );
 
     }
