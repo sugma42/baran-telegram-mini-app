@@ -46,9 +46,11 @@ function validateTelegramInitData(initData) {
 
     try {
 
-        const params = new URLSearchParams(initData);
+        const params =
+            new URLSearchParams(initData);
 
-        const receivedHash = params.get("hash");
+        const receivedHash =
+            params.get("hash");
 
         if (!receivedHash) {
             return null;
@@ -56,23 +58,43 @@ function validateTelegramInitData(initData) {
 
         params.delete("hash");
 
-        const dataCheckString = [...params.entries()]
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([key, value]) => `${key}=${value}`)
-            .join("\n");
+        const dataCheckString =
+            [...params.entries()]
+                .sort(([a], [b]) =>
+                    a.localeCompare(b)
+                )
+                .map(
+                    ([key, value]) =>
+                        `${key}=${value}`
+                )
+                .join("\n");
 
-        const secretKey = crypto
-            .createHmac("sha256", "WebAppData")
-            .update(botToken)
-            .digest();
+        const secretKey =
+            crypto
+                .createHmac(
+                    "sha256",
+                    "WebAppData"
+                )
+                .update(botToken)
+                .digest();
 
-        const calculatedHash = crypto
-            .createHmac("sha256", secretKey)
-            .update(dataCheckString)
-            .digest("hex");
+        const calculatedHash =
+            crypto
+                .createHmac(
+                    "sha256",
+                    secretKey
+                )
+                .update(dataCheckString)
+                .digest("hex");
 
         if (
-            calculatedHash.length !== receivedHash.length ||
+            calculatedHash.length !==
+            receivedHash.length
+        ) {
+            return null;
+        }
+
+        if (
             !crypto.timingSafeEqual(
                 Buffer.from(calculatedHash),
                 Buffer.from(receivedHash)
@@ -81,7 +103,8 @@ function validateTelegramInitData(initData) {
             return null;
         }
 
-        const userData = params.get("user");
+        const userData =
+            params.get("user");
 
         if (!userData) {
             return null;
@@ -108,17 +131,6 @@ function validateTelegramInitData(initData) {
 
 function authenticate(req, res, next) {
 
-    /*
-     * DEMO_MODE=true позволяет тестировать приложение
-     * без Telegram.
-     *
-     * В Render можно поставить:
-     *
-     * DEMO_MODE=false
-     *
-     * для настоящей Telegram авторизации.
-     */
-
     if (process.env.DEMO_MODE === "true") {
 
         req.telegramUser = {
@@ -135,7 +147,9 @@ function authenticate(req, res, next) {
         req.headers["x-telegram-init-data"];
 
     const telegramUser =
-        validateTelegramInitData(initData);
+        validateTelegramInitData(
+            initData
+        );
 
     if (!telegramUser) {
 
@@ -145,7 +159,8 @@ function authenticate(req, res, next) {
         });
     }
 
-    req.telegramUser = telegramUser;
+    req.telegramUser =
+        telegramUser;
 
     next();
 }
@@ -159,10 +174,14 @@ function authenticate(req, res, next) {
 function adminOnly(req, res, next) {
 
     const adminId =
-        String(process.env.ADMIN_TG_ID || "");
+        String(
+            process.env.ADMIN_TG_ID || ""
+        );
 
     const currentId =
-        String(req.telegramUser?.id || "");
+        String(
+            req.telegramUser?.id || ""
+        );
 
     if (
         !adminId ||
@@ -228,11 +247,15 @@ app.get(
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                "ME ERROR:",
+                error
+            );
 
             res.status(500).json({
                 success: false,
-                error: "Не удалось получить пользователя"
+                error:
+                    "Не удалось получить пользователя"
             });
         }
     }
@@ -241,12 +264,6 @@ app.get(
 /*
 |--------------------------------------------------------------------------
 | COMBINATIONS
-|--------------------------------------------------------------------------
-|
-| Все 64 комбинации из 4 символов.
-|
-| Для демо результат специально имеет небольшие
-| множители и много проигрышных комбинаций.
 |--------------------------------------------------------------------------
 */
 
@@ -260,39 +277,44 @@ const symbols = [
 const combinations = [];
 
 for (const a of symbols) {
+
     for (const b of symbols) {
+
         for (const c of symbols) {
 
             let multiplier = 0;
 
-            /*
-             * Три одинаковых.
-             */
-
-            if (a === b && b === c) {
+            if (
+                a === b &&
+                b === c
+            ) {
 
                 if (a === "7️⃣") {
+
                     multiplier = 4;
+
                 } else if (a === "🍋") {
+
                     multiplier = 2.5;
+
                 } else if (a === "🍒") {
+
                     multiplier = 2;
+
                 } else {
+
                     multiplier = 0;
                 }
-            }
 
-            /*
-             * Две одинаковых.
-             */
-
-            else {
+            } else {
 
                 const counts = {};
 
                 [a, b, c].forEach(symbol => {
+
                     counts[symbol] =
                         (counts[symbol] || 0) + 1;
+
                 });
 
                 const maxCount =
@@ -305,32 +327,30 @@ for (const a of symbols) {
                     if (
                         counts["7️⃣"] === 2
                     ) {
+
                         multiplier = 1.4;
 
                     } else if (
                         counts["🍋"] === 2
                     ) {
+
                         multiplier = 1.15;
 
                     } else if (
                         counts["🍒"] === 2
                     ) {
+
                         multiplier = 1.1;
                     }
-                }
 
-                /*
-                 * Одна комбинация без пары.
-                 * Иногда возвращаем 0.5.
-                 */
-
-                else {
+                } else {
 
                     if (
                         a === "🍋" &&
                         b === "🍒" &&
                         c === "🍋"
                     ) {
+
                         multiplier = 0.5;
 
                     } else if (
@@ -338,32 +358,32 @@ for (const a of symbols) {
                         b === "🍋" &&
                         c === "🍒"
                     ) {
-                        multiplier = 0.5;
 
-                    } else {
-                        multiplier = 0;
+                        multiplier = 0.5;
                     }
                 }
             }
 
-            /*
-             * Вес.
-             *
-             * Чем меньше множитель,
-             * тем выше вероятность.
-             */
-
             let weight = 10;
 
             if (multiplier >= 4) {
+
                 weight = 0.4;
+
             } else if (multiplier >= 2) {
+
                 weight = 1.5;
+
             } else if (multiplier >= 1.4) {
+
                 weight = 3;
+
             } else if (multiplier >= 1) {
+
                 weight = 5;
+
             } else if (multiplier > 0) {
+
                 weight = 7;
             }
 
@@ -427,12 +447,6 @@ app.post(
             const bet =
                 Number(req.body.bet);
 
-            /*
-             * Баланс хранится в сотых.
-             *
-             * 0.10 = 10
-             */
-
             if (
                 !Number.isInteger(bet) ||
                 bet < 1
@@ -440,7 +454,8 @@ app.post(
 
                 return res.status(400).json({
                     success: false,
-                    error: "Минимальная ставка — 0.01"
+                    error:
+                        "Минимальная ставка — 0.01"
                 });
             }
 
@@ -448,7 +463,8 @@ app.post(
 
                 return res.status(400).json({
                     success: false,
-                    error: "Слишком большая ставка"
+                    error:
+                        "Слишком большая ставка"
                 });
             }
 
@@ -456,7 +472,8 @@ app.post(
 
                 return res.status(400).json({
                     success: false,
-                    error: "Недостаточно баланса"
+                    error:
+                        "Недостаточно баланса"
                 });
             }
 
@@ -468,14 +485,11 @@ app.post(
                     bet * result.multiplier
                 );
 
-            /*
-             * Демо-комиссия 10% с выигрыша.
-             *
-             * Игрок получает 90%.
-             */
+            let playerWin =
+                grossWin;
 
-            let playerWin = grossWin;
-            let adminCommission = 0;
+            let adminCommission =
+                0;
 
             if (grossWin > 0) {
 
@@ -490,66 +504,71 @@ app.post(
             }
 
             /*
-             * Снимаем ставку.
+             * Вся операция в одной SQLite transaction.
              */
 
-            changeBalance(
-                user.id,
-                -bet
-            );
+            const transaction =
+                require("./database").db.transaction(
+                    () => {
 
-            /*
-             * Начисляем игроку выигрыш.
-             */
+                        changeBalance(
+                            user.id,
+                            -bet
+                        );
 
-            if (playerWin > 0) {
+                        if (playerWin > 0) {
 
-                changeBalance(
-                    user.id,
-                    playerWin
+                            changeBalance(
+                                user.id,
+                                playerWin
+                            );
+                        }
+
+                        if (adminCommission > 0) {
+
+                            changeAdminBalance(
+                                adminCommission
+                            );
+                        }
+
+                        saveSpin({
+
+                            userId: user.id,
+
+                            bet,
+
+                            combo:
+                                result.combo,
+
+                            multiplier:
+                                result.multiplier,
+
+                            win:
+                                grossWin,
+
+                            playerWin,
+
+                            adminCommission
+                        });
+
+                        addTransaction({
+
+                            userId:
+                                user.id,
+
+                            type:
+                                "spin",
+
+                            amount:
+                                playerWin - bet,
+
+                            description:
+                                `Ставка ${bet}, результат ${result.multiplier}x`
+                        });
+                    }
                 );
-            }
 
-            /*
-             * Комиссия владельца.
-             */
-
-            if (adminCommission > 0) {
-
-                changeAdminBalance(
-                    adminCommission
-                );
-            }
-
-            saveSpin({
-
-                userId: user.id,
-
-                bet,
-
-                combo: result.combo,
-
-                multiplier: result.multiplier,
-
-                win: grossWin,
-
-                playerWin,
-
-                adminCommission
-            });
-
-            addTransaction({
-
-                userId: user.id,
-
-                type: "spin",
-
-                amount:
-                    playerWin - bet,
-
-                description:
-                    `Ставка ${bet}, результат ${result.multiplier}x`
-            });
+            transaction();
 
             const updatedUser =
                 getUserByTelegramId(
@@ -591,7 +610,8 @@ app.post(
 
             res.status(500).json({
                 success: false,
-                error: "Ошибка сервера"
+                error:
+                    "Ошибка сервера"
             });
         }
     }
@@ -602,10 +622,13 @@ app.post(
 | DEMO DEPOSIT
 |--------------------------------------------------------------------------
 |
-| Только для демо.
+| amount приходит уже в СОТЫХ единицах.
 |
-| В реальной версии здесь будет проверка
-| блокчейн-транзакции.
+| Например:
+|
+| 1.00 -> frontend -> 100
+| 10.00 -> frontend -> 1000
+|
 |--------------------------------------------------------------------------
 */
 
@@ -627,7 +650,8 @@ app.post(
 
                 return res.status(400).json({
                     success: false,
-                    error: "Некорректная сумма"
+                    error:
+                        "Некорректная сумма"
                 });
             }
 
@@ -636,22 +660,37 @@ app.post(
                     req.telegramUser
                 );
 
-            changeBalance(
-                user.id,
-                amount
-            );
+            /*
+             * Пополнение и запись транзакции
+             * выполняются вместе.
+             */
 
-            addTransaction({
+            const transaction =
+                require("./database").db.transaction(
+                    () => {
 
-                userId: user.id,
+                        changeBalance(
+                            user.id,
+                            amount
+                        );
 
-                type: "demo_deposit",
+                        addTransaction({
 
-                amount,
+                            userId:
+                                user.id,
 
-                description:
-                    "Демо-пополнение"
-            });
+                            type:
+                                "demo_deposit",
+
+                            amount,
+
+                            description:
+                                "Демо-пополнение"
+                        });
+                    }
+                );
+
+            transaction();
 
             const updated =
                 getUserByTelegramId(
@@ -668,11 +707,15 @@ app.post(
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                "DEPOSIT ERROR:",
+                error
+            );
 
             res.status(500).json({
                 success: false,
-                error: "Ошибка пополнения"
+                error:
+                    "Ошибка пополнения"
             });
         }
     }
@@ -708,7 +751,8 @@ app.get(
 
                 history:
                     history.map(spin => ({
-                        id: spin.id,
+                        id:
+                            spin.id,
 
                         bet:
                             spin.bet,
@@ -732,11 +776,15 @@ app.get(
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                "HISTORY ERROR:",
+                error
+            );
 
             res.status(500).json({
                 success: false,
-                error: "Не удалось получить историю"
+                error:
+                    "Не удалось получить историю"
             });
         }
     }
@@ -768,11 +816,15 @@ app.get(
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                "ADMIN STATS ERROR:",
+                error
+            );
 
             res.status(500).json({
                 success: false,
-                error: "Не удалось получить статистику"
+                error:
+                    "Не удалось получить статистику"
             });
         }
     }
@@ -781,10 +833,6 @@ app.get(
 /*
 |--------------------------------------------------------------------------
 | ADMIN DEMO WITHDRAW
-|--------------------------------------------------------------------------
-|
-| Пока только уменьшает виртуальный баланс администратора.
-| Реальный вывод крипты здесь НЕ подключён.
 |--------------------------------------------------------------------------
 */
 
@@ -806,7 +854,8 @@ app.post(
 
                 return res.status(400).json({
                     success: false,
-                    error: "Некорректная сумма"
+                    error:
+                        "Некорректная сумма"
                 });
             }
 
@@ -819,7 +868,8 @@ app.post(
 
                 return res.status(400).json({
                     success: false,
-                    error: "Недостаточно средств"
+                    error:
+                        "Недостаточно средств"
                 });
             }
 
@@ -838,11 +888,15 @@ app.post(
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                "WITHDRAW ERROR:",
+                error
+            );
 
             res.status(500).json({
                 success: false,
-                error: "Ошибка вывода"
+                error:
+                    "Ошибка вывода"
             });
         }
     }
@@ -860,7 +914,8 @@ app.use((req, res) => {
 
         success: false,
 
-        error: "Страница не найдена"
+        error:
+            "Страница не найдена"
     });
 });
 
