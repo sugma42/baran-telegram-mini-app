@@ -4,6 +4,7 @@ require("dotenv").config();
 
 const express = require("express");
 const path = require("path");
+const crypto = require("crypto");
 
 const {
     getOrCreateUser,
@@ -30,54 +31,210 @@ const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
 
-app.use(express.urlencoded({
-    extended: true
-}));
-
-app.use(express.static(
-    path.join(__dirname, "public")
-));
+app.use(
+    express.static(
+        path.join(__dirname, "public")
+    )
+);
 
 
 /*
 |--------------------------------------------------------------------------
-| DEMO USER
+| TELEGRAM AUTH
 |--------------------------------------------------------------------------
 |
-| Telegram authentication полностью отключена.
+| Telegram authentication НЕ обязательна.
 |
-| Все пользователи работают через одного
-| локального demo-пользователя.
+| Если приложение открыто внутри Telegram:
+| используется настоящий Telegram-пользователь.
+|
+| Если приложение открыто обычным браузером:
+| используется demo-пользователь.
 |
 |--------------------------------------------------------------------------
 */
 
-const DEMO_USER = {
-    id: "demo",
-    username: "demo_user",
-    first_name: "Demo",
-    photo_url: ""
-};
+function validateTelegramInitData(initData) {
+
+    if (!initData) {
+        return null;
+    }
+
+    const botToken =
+        process.env.BOT_TOKEN;
+
+    /*
+     * Если BOT_TOKEN отсутствует,
+     * просто не используем Telegram auth.
+     */
+
+    if (!botToken) {
+        console.log(
+            "BOT_TOKEN не указан — используется demo user"
+        );
+
+        return null;
+    }
+
+    try {
+
+        const params =
+            new URLSearchParams(initData);
+
+        const receivedHash =
+            params.get("hash");
+
+        if (!receivedHash) {
+            return null;
+        }
+
+        params.delete("hash");
+
+        const dataCheckString =
+            [...params.entries()]
+                .sort(
+                    ([a], [b]) =>
+                        a.localeCompare(b)
+                )
+                .map(
+                    ([key, value]) =>
+                        `${key}=${value}`
+                )
+                .join("\n");
+
+        const secretKey =
+            crypto
+                .createHmac(
+                    "sha256",
+                    "WebAppData"
+                )
+                .update(botToken)
+                .digest();
+
+        const calculatedHash =
+            crypto
+                .createHmac(
+                    "sha256",
+                    secretKey
+                )
+                .update(dataCheckString)
+                .digest("hex");
+
+        if (
+            calculatedHash.length !==
+            receivedHash.length
+        ) {
+            return null;
+        }
+
+        if (
+            !crypto.timingSafeEqual(
+                Buffer.from(
+                    calculatedHash,
+                    "utf8"
+                ),
+                Buffer.from(
+                    receivedHash,
+                    "utf8"
+                )
+            )
+        ) {
+            return null;
+        }
+
+        const userData =
+            params.get("user");
+
+        if (!userData) {
+            return null;
+        }
+
+        return JSON.parse(userData);
+
+    } catch (error) {
+
+        console.error(
+            "Telegram auth error:",
+            error.message
+        );
+
+        return null;
+    }
+}
 
 
 /*
 |--------------------------------------------------------------------------
-| AUTH
+| AUTHENTICATE
 |--------------------------------------------------------------------------
 |
-| Никакого Telegram initData.
-| Никакого BOT_TOKEN.
-| Никакой проверки подписи.
+| Никакой ошибки:
 |
+| "Telegram authentication failed"
+|
+| больше не будет блокировать приложение.
 |--------------------------------------------------------------------------
 */
 
 function authenticate(req, res, next) {
 
-    req.telegramUser = DEMO_USER;
+    const initData =
+        req.headers[
+            "x-telegram-init-data"
+        ];
+
+    /*
+     * Сначала пробуем Telegram.
+     */
+
+    if (initData) {
+
+        const telegramUser =
+            validateTelegramInitData(
+                initData
+            );
+
+        if (telegramUser) {
+
+            req.telegramUser =
+                telegramUser;
+
+            req.demoUser = false;
+
+            return next();
+        }
+
+        /*
+         * initData был передан,
+         * но Telegram-проверка не прошла.
+         *
+         * Вместо 401 используем demo user.
+         */
+
+        console.warn(
+            "Telegram initData не прошёл проверку. Используется demo user."
+        );
+    }
+
+    /*
+     * DEMO USER
+     */
+
+    req.telegramUser = {
+
+        id: "demo",
+
+        username: "demo_user",
+
+        first_name: "Demo",
+
+        photo_url: ""
+
+    };
+
+    req.demoUser = true;
 
     next();
-
 }
 
 
@@ -85,160 +242,173 @@ function authenticate(req, res, next) {
 |--------------------------------------------------------------------------
 | ADMIN
 |--------------------------------------------------------------------------
-|
-| В этом демо режиме текущий пользователь
-| автоматически имеет доступ к админке.
-|
-|--------------------------------------------------------------------------
 */
 
 function adminOnly(req, res, next) {
 
-    next();
+    const adminId =
+        String(
+            process.env.ADMIN_TG_ID || ""
+        );
 
+    const currentId =
+        String(
+            req.telegramUser?.id || ""
+        );
+
+    /*
+     * Demo user не является админом,
+     * если ADMIN_TG_ID специально не установлен
+     * как "demo".
+     */
+
+    if (
+        !adminId ||
+        currentId !== adminId
+    ) {
+
+        return res.status(403).json({
+
+            success: false,
+
+            error:
+                "Доступ запрещён"
+
+        });
+    }
+
+    next();
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| GAME SYMBOLS
+| HOME
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+    "/",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "index.html"
+            )
+        );
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| HEALTH
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+    "/api/health",
+    (req, res) => {
+
+        res.json({
+
+            success: true,
+
+            status: "ok",
+
+            time:
+                new Date().toISOString()
+
+        });
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| ME
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+    "/api/me",
+    authenticate,
+    (req, res) => {
+
+        try {
+
+            const user =
+                getOrCreateUser(
+                    req.telegramUser
+                );
+
+            res.json({
+
+                success: true,
+
+                user: {
+
+                    id:
+                        user.id,
+
+                    telegram_id:
+                        user.tg_id,
+
+                    username:
+                        user.username,
+
+                    first_name:
+                        user.first_name,
+
+                    photo_url:
+                        user.photo_url,
+
+                    balance:
+                        user.balance
+
+                }
+
+            });
+
+        } catch (error) {
+
+            console.error(
+                "ME ERROR:",
+                error
+            );
+
+            res.status(500).json({
+
+                success: false,
+
+                error:
+                    "Не удалось получить пользователя"
+
+            });
+        }
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| SYMBOLS
 |--------------------------------------------------------------------------
 */
 
 const symbols = [
+
     "🍋",
+
     "7️⃣",
+
     "🍒",
+
     "💀"
+
 ];
-
-
-/*
-|--------------------------------------------------------------------------
-| PAYTABLE
-|--------------------------------------------------------------------------
-*/
-
-function getMultiplier(
-    a,
-    b,
-    c
-) {
-
-    /*
-     * Три одинаковых
-     */
-
-    if (
-        a === b &&
-        b === c
-    ) {
-
-        if (a === "7️⃣") {
-            return 4;
-        }
-
-        if (a === "🍋") {
-            return 2.5;
-        }
-
-        if (a === "🍒") {
-            return 2;
-        }
-
-        return 0;
-    }
-
-
-    /*
-     * Подсчитываем одинаковые символы
-     */
-
-    const counts = {};
-
-
-    [
-        a,
-        b,
-        c
-    ].forEach(symbol => {
-
-        counts[symbol] =
-            (counts[symbol] || 0) + 1;
-
-    });
-
-
-    const maxCount =
-        Math.max(
-            ...Object.values(counts)
-        );
-
-
-    /*
-     * Два одинаковых
-     */
-
-    if (
-        maxCount === 2
-    ) {
-
-        if (
-            counts["7️⃣"] === 2
-        ) {
-
-            return 1.4;
-
-        }
-
-        if (
-            counts["🍋"] === 2
-        ) {
-
-            return 1.15;
-
-        }
-
-        if (
-            counts["🍒"] === 2
-        ) {
-
-            return 1.1;
-
-        }
-
-    }
-
-
-    /*
-     * Специальные комбинации
-     */
-
-    if (
-        a === "🍋" &&
-        b === "🍒" &&
-        c === "🍋"
-    ) {
-
-        return 0.5;
-
-    }
-
-
-    if (
-        a === "🍒" &&
-        b === "🍋" &&
-        c === "🍒"
-    ) {
-
-        return 0.5;
-
-    }
-
-
-    return 0;
-
-}
 
 
 /*
@@ -262,17 +432,130 @@ for (
             const c of symbols
         ) {
 
-            const multiplier =
-                getMultiplier(
-                    a,
-                    b,
-                    c
-                );
+            let multiplier = 0;
 
 
             /*
-             * Чем выше выигрыш,
-             * тем меньше вероятность.
+             * Три одинаковых
+             */
+
+            if (
+                a === b &&
+                b === c
+            ) {
+
+                if (
+                    a === "7️⃣"
+                ) {
+
+                    multiplier = 4;
+
+                } else if (
+                    a === "🍋"
+                ) {
+
+                    multiplier = 2.5;
+
+                } else if (
+                    a === "🍒"
+                ) {
+
+                    multiplier = 2;
+
+                } else {
+
+                    multiplier = 0;
+
+                }
+
+            } else {
+
+                const counts = {};
+
+
+                [
+                    a,
+                    b,
+                    c
+                ].forEach(
+                    symbol => {
+
+                        counts[symbol] =
+                            (
+                                counts[symbol] ||
+                                0
+                            ) + 1;
+
+                    }
+                );
+
+
+                const maxCount =
+                    Math.max(
+                        ...Object.values(
+                            counts
+                        )
+                    );
+
+
+                /*
+                 * Два одинаковых
+                 */
+
+                if (
+                    maxCount === 2
+                ) {
+
+                    if (
+                        counts["7️⃣"] === 2
+                    ) {
+
+                        multiplier = 1.4;
+
+                    } else if (
+                        counts["🍋"] === 2
+                    ) {
+
+                        multiplier = 1.15;
+
+                    } else if (
+                        counts["🍒"] === 2
+                    ) {
+
+                        multiplier = 1.1;
+
+                    }
+
+                } else {
+
+                    /*
+                     * Специальные комбинации
+                     */
+
+                    if (
+                        a === "🍋" &&
+                        b === "🍒" &&
+                        c === "🍋"
+                    ) {
+
+                        multiplier = 0.5;
+
+                    } else if (
+                        a === "🍒" &&
+                        b === "🍋" &&
+                        c === "🍒"
+                    ) {
+
+                        multiplier = 0.5;
+
+                    }
+
+                }
+            }
+
+
+            /*
+             * Вес комбинации.
              */
 
             let weight = 10;
@@ -324,11 +607,8 @@ for (
                 weight
 
             });
-
         }
-
     }
-
 }
 
 
@@ -343,14 +623,10 @@ function getRandomCombination() {
     const totalWeight =
         combinations.reduce(
             (
-                total,
+                sum,
                 item
-            ) => {
-
-                return total +
-                    item.weight;
-
-            },
+            ) =>
+                sum + item.weight,
             0
         );
 
@@ -364,7 +640,8 @@ function getRandomCombination() {
         const item of combinations
     ) {
 
-        random -= item.weight;
+        random -=
+            item.weight;
 
 
         if (
@@ -374,144 +651,13 @@ function getRandomCombination() {
             return item;
 
         }
-
     }
 
 
     return combinations[
         combinations.length - 1
     ];
-
 }
-
-
-/*
-|--------------------------------------------------------------------------
-| GET CURRENT USER
-|--------------------------------------------------------------------------
-*/
-
-function getCurrentUser() {
-
-    return getOrCreateUser(
-        DEMO_USER
-    );
-
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| HOME
-|--------------------------------------------------------------------------
-*/
-
-app.get(
-    "/",
-    (req, res) => {
-
-        res.sendFile(
-            path.join(
-                __dirname,
-                "public",
-                "index.html"
-            )
-        );
-
-    }
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| API HEALTH
-|--------------------------------------------------------------------------
-*/
-
-app.get(
-    "/api/health",
-    (req, res) => {
-
-        res.json({
-
-            success: true,
-
-            server: "online",
-
-            telegramAuth: false
-
-        });
-
-    }
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| ME
-|--------------------------------------------------------------------------
-*/
-
-app.get(
-    "/api/me",
-    authenticate,
-    (req, res) => {
-
-        try {
-
-            const user =
-                getCurrentUser();
-
-
-            res.json({
-
-                success: true,
-
-                user: {
-
-                    id:
-                        user.id,
-
-                    telegram_id:
-                        user.tg_id,
-
-                    username:
-                        user.username,
-
-                    first_name:
-                        user.first_name,
-
-                    photo_url:
-                        user.photo_url,
-
-                    balance:
-                        user.balance
-
-                }
-
-            });
-
-        } catch (error) {
-
-            console.error(
-                "ME ERROR:",
-                error
-            );
-
-
-            res.status(500).json({
-
-                success: false,
-
-                error:
-                    "Не удалось получить пользователя"
-
-            });
-
-        }
-
-    }
-);
 
 
 /*
@@ -528,22 +674,10 @@ app.post(
         try {
 
             const user =
-                getCurrentUser();
+                getOrCreateUser(
+                    req.telegramUser
+                );
 
-
-            /*
-             * В базе баланс хранится
-             * в минимальных единицах.
-             *
-             * Например:
-             *
-             * 1.00 = 100
-             * 10.00 = 1000
-             *
-             * Поэтому frontend должен
-             * отправлять ставку уже
-             * в этих единицах.
-             */
 
             const bet =
                 Number(
@@ -552,7 +686,7 @@ app.post(
 
 
             /*
-             * Проверка ставки
+             * 1 = 1 💎
              */
 
             if (
@@ -565,10 +699,9 @@ app.post(
                     success: false,
 
                     error:
-                        "Минимальная ставка — 0.01"
+                        "Минимальная ставка — 1 💎"
 
                 });
-
             }
 
 
@@ -584,36 +717,22 @@ app.post(
                         "Слишком большая ставка"
 
                 });
-
             }
 
 
             /*
-             * Проверяем актуальный баланс
+             * Проверяем баланс
              */
 
-            const freshUser =
+            const currentUser =
                 getUserByTelegramId(
                     user.tg_id
                 );
 
 
-            if (!freshUser) {
-
-                return res.status(404).json({
-
-                    success: false,
-
-                    error:
-                        "Пользователь не найден"
-
-                });
-
-            }
-
-
             if (
-                freshUser.balance < bet
+                !currentUser ||
+                currentUser.balance < bet
             ) {
 
                 return res.status(400).json({
@@ -621,15 +740,14 @@ app.post(
                     success: false,
 
                     error:
-                        "Недостаточно баланса"
+                        "Недостаточно 💎"
 
                 });
-
             }
 
 
             /*
-             * Получаем результат
+             * Получаем комбинацию
              */
 
             const result =
@@ -648,7 +766,7 @@ app.post(
 
 
             /*
-             * Комиссия 10%
+             * Комиссия администратора 10%
              */
 
             let playerWin =
@@ -666,36 +784,35 @@ app.post(
                         grossWin * 0.10
                     );
 
-
                 playerWin =
                     grossWin -
                     adminCommission;
-
             }
 
 
             /*
-             * Атомарно списываем ставку
+             * Списываем ставку.
+             *
+             * 1 = 1 💎
              */
 
-            const success =
+            const removed =
                 subtractBalance(
                     user.id,
                     bet
                 );
 
 
-            if (!success) {
+            if (!removed) {
 
                 return res.status(400).json({
 
                     success: false,
 
                     error:
-                        "Недостаточно баланса"
+                        "Недостаточно 💎"
 
                 });
-
             }
 
 
@@ -711,12 +828,11 @@ app.post(
                     user.id,
                     playerWin
                 );
-
             }
 
 
             /*
-             * Начисляем комиссию админу
+             * Комиссия админа
              */
 
             if (
@@ -726,7 +842,6 @@ app.post(
                 changeAdminBalance(
                     adminCommission
                 );
-
             }
 
 
@@ -758,7 +873,7 @@ app.post(
 
 
             /*
-             * Сохраняем транзакцию
+             * Транзакция
              */
 
             addTransaction({
@@ -779,7 +894,7 @@ app.post(
 
 
             /*
-             * Берём новый баланс
+             * Новый баланс
              */
 
             const updatedUser =
@@ -823,19 +938,15 @@ app.post(
                 error
             );
 
-
             res.status(500).json({
 
                 success: false,
 
                 error:
-                    error.message ||
                     "Ошибка сервера"
 
             });
-
         }
-
     }
 );
 
@@ -845,20 +956,11 @@ app.post(
 | DEMO DEPOSIT
 |--------------------------------------------------------------------------
 |
-| ВАЖНО:
+| Теперь:
 |
-| Frontend из твоего index.html
-| делает:
-|
-| toUnits(1.00) -> 100
-|
-| toUnits(10.00) -> 1000
-|
-| Поэтому сервер просто добавляет
-| полученное число.
-|
-| 100 -> +1.00 💎
-| 1000 -> +10.00 💎
+| 1     -> +1 💎
+| 10    -> +10 💎
+| 100   -> +100 💎
 |
 |--------------------------------------------------------------------------
 */
@@ -870,29 +972,25 @@ app.post(
 
         try {
 
-            let amount =
+            /*
+             * С фронта приходит обычное число.
+             *
+             * Например:
+             *
+             * 1
+             * 10
+             * 25
+             */
+
+            const amount =
                 Number(
                     req.body.amount
                 );
 
 
             if (
-                !Number.isFinite(amount)
-            ) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    error:
-                        "Некорректная сумма"
-
-                });
-
-            }
-
-
-            if (
+                !Number.isFinite(amount) ||
+                !Number.isInteger(amount) ||
                 amount <= 0
             ) {
 
@@ -901,47 +999,9 @@ app.post(
                     success: false,
 
                     error:
-                        "Сумма должна быть больше 0"
+                        "Сумма должна быть целым числом"
 
                 });
-
-            }
-
-
-            /*
-             * Здесь ожидаются именно
-             * целые единицы базы.
-             *
-             * Например:
-             *
-             * 100 = 1.00
-             * 500 = 5.00
-             * 1000 = 10.00
-             */
-
-            if (
-                !Number.isInteger(amount)
-            ) {
-
-                amount =
-                    Math.round(amount);
-
-            }
-
-
-            if (
-                amount < 1
-            ) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    error:
-                        "Минимальная сумма — 0.01"
-
-                });
-
             }
 
 
@@ -957,13 +1017,7 @@ app.post(
                         "Слишком большая сумма"
 
                 });
-
             }
-
-
-            console.log(
-                `💎 DEPOSIT: +${amount}`
-            );
 
 
             /*
@@ -971,11 +1025,13 @@ app.post(
              */
 
             const user =
-                getCurrentUser();
+                getOrCreateUser(
+                    req.telegramUser
+                );
 
 
             /*
-             * Меняем баланс
+             * 1 = 1 💎
              */
 
             changeBalance(
@@ -1015,13 +1071,15 @@ app.post(
 
 
             console.log(
-                `💰 NEW BALANCE: ${updatedUser.balance}`
+                `DEPOSIT: user=${user.tg_id}, amount=${amount}, balance=${updatedUser.balance}`
             );
 
 
             res.json({
 
                 success: true,
+
+                amount,
 
                 balance:
                     updatedUser.balance
@@ -1035,19 +1093,15 @@ app.post(
                 error
             );
 
-
             res.status(500).json({
 
                 success: false,
 
                 error:
-                    error.message ||
                     "Ошибка пополнения"
 
             });
-
         }
-
     }
 );
 
@@ -1066,7 +1120,9 @@ app.get(
         try {
 
             const user =
-                getCurrentUser();
+                getOrCreateUser(
+                    req.telegramUser
+                );
 
 
             const history =
@@ -1093,7 +1149,9 @@ app.get(
                             combo: [
 
                                 spin.symbol1,
+
                                 spin.symbol2,
+
                                 spin.symbol3
 
                             ],
@@ -1119,7 +1177,6 @@ app.get(
                 error
             );
 
-
             res.status(500).json({
 
                 success: false,
@@ -1128,9 +1185,7 @@ app.get(
                     "Не удалось получить историю"
 
             });
-
         }
-
     }
 );
 
@@ -1168,7 +1223,6 @@ app.get(
                 error
             );
 
-
             res.status(500).json({
 
                 success: false,
@@ -1177,9 +1231,7 @@ app.get(
                     "Не удалось получить статистику"
 
             });
-
         }
-
     }
 );
 
@@ -1217,17 +1269,16 @@ app.post(
                         "Некорректная сумма"
 
                 });
-
             }
 
 
-            const adminBalance =
+            const currentBalance =
                 getAdminStats()
                     .adminBalance;
 
 
             if (
-                adminBalance < amount
+                currentBalance < amount
             ) {
 
                 return res.status(400).json({
@@ -1238,7 +1289,6 @@ app.post(
                         "Недостаточно средств"
 
                 });
-
             }
 
 
@@ -1264,19 +1314,15 @@ app.post(
                 error
             );
 
-
             res.status(500).json({
 
                 success: false,
 
                 error:
-                    error.message ||
                     "Ошибка вывода"
 
             });
-
         }
-
     }
 );
 
@@ -1298,14 +1344,13 @@ app.use(
                 "Страница не найдена"
 
         });
-
     }
 );
 
 
 /*
 |--------------------------------------------------------------------------
-| GLOBAL ERROR
+| ERROR HANDLER
 |--------------------------------------------------------------------------
 */
 
@@ -1317,7 +1362,6 @@ app.use(
             error
         );
 
-
         res.status(500).json({
 
             success: false,
@@ -1326,7 +1370,6 @@ app.use(
                 "Внутренняя ошибка сервера"
 
         });
-
     }
 );
 
@@ -1344,39 +1387,31 @@ app.listen(
         console.log("");
 
         console.log(
-            "======================================"
+            "================================="
         );
 
         console.log(
-            "🐏 БАРАН CASINO SERVER"
+            "🐏 БАРАН SERVER"
         );
 
         console.log(
-            "======================================"
+            "================================="
         );
 
         console.log(
-            `🚀 Server: http://localhost:${PORT}`
+            `🚀 Порт: ${PORT}`
         );
 
         console.log(
-            "🔓 Telegram authentication: OFF"
+            `💎 Баланс: 1 = 1 💎`
         );
 
         console.log(
-            "👤 User: demo_user"
+            `🔐 Telegram auth: необязательна`
         );
 
         console.log(
-            "💎 Balance system: 100 = 1.00"
-        );
-
-        console.log(
-            "🎰 Casino: ONLINE"
-        );
-
-        console.log(
-            "======================================"
+            "================================="
         );
 
         console.log("");
