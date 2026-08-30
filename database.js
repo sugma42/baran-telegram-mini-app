@@ -1,3 +1,5 @@
+"use strict";
+
 const Database = require("better-sqlite3");
 const path = require("path");
 const fs = require("fs");
@@ -20,11 +22,11 @@ db.pragma("foreign_keys = ON");
 | USERS
 |--------------------------------------------------------------------------
 |
-| Баланс хранится в сотых:
+| Баланс хранится напрямую:
 |
-| 1.00 = 100
-| 0.10 = 10
-| 0.01 = 1
+| 1   = 1 💎
+| 10  = 10 💎
+| 100 = 100 💎
 |
 |--------------------------------------------------------------------------
 */
@@ -48,7 +50,7 @@ db.exec(`
 */
 
 const userColumns = db
-    .prepare(`PRAGMA table_info(users)`)
+    .prepare("PRAGMA table_info(users)")
     .all()
     .map(row => row.name);
 
@@ -68,15 +70,21 @@ if (!userColumns.includes("photo_url")) {
 db.exec(`
     CREATE TABLE IF NOT EXISTS spins (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+
         user_id INTEGER NOT NULL,
+
         bet INTEGER NOT NULL,
+
         symbol1 TEXT NOT NULL,
         symbol2 TEXT NOT NULL,
         symbol3 TEXT NOT NULL,
+
         multiplier REAL NOT NULL,
+
         win INTEGER NOT NULL DEFAULT 0,
         player_win INTEGER NOT NULL DEFAULT 0,
         admin_commission INTEGER NOT NULL DEFAULT 0,
+
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
         FOREIGN KEY (user_id)
@@ -94,10 +102,15 @@ db.exec(`
 db.exec(`
     CREATE TABLE IF NOT EXISTS transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+
         user_id INTEGER,
+
         type TEXT NOT NULL,
+
         amount INTEGER NOT NULL,
+
         description TEXT,
+
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
         FOREIGN KEY (user_id)
@@ -108,7 +121,7 @@ db.exec(`
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN
+| ADMIN WALLET
 |--------------------------------------------------------------------------
 */
 
@@ -166,7 +179,8 @@ function getOrCreateUser(telegramUser) {
 
         db.prepare(`
             UPDATE users
-            SET username = ?,
+            SET
+                username = ?,
                 first_name = ?,
                 photo_url = ?
             WHERE tg_id = ?
@@ -208,6 +222,7 @@ function getOrCreateUser(telegramUser) {
     `).get(result.lastInsertRowid);
 }
 
+
 function getUserByTelegramId(tgId) {
 
     return db.prepare(`
@@ -223,7 +238,19 @@ function getUserByTelegramId(tgId) {
 |--------------------------------------------------------------------------
 */
 
+/*
+ * Простое изменение баланса.
+ *
+ * 1 = +1
+ * 10 = +10
+ * -5 = -5
+ */
+
 function changeBalance(userId, amount) {
+
+    if (!Number.isInteger(amount)) {
+        throw new Error("Баланс должен изменяться целым числом");
+    }
 
     const result = db.prepare(`
         UPDATE users
@@ -247,7 +274,48 @@ function changeBalance(userId, amount) {
     `).get(userId);
 }
 
+
+/*
+ * Атомарно списывает деньги.
+ *
+ * Важно:
+ * UPDATE выполнится только если
+ * на балансе достаточно средств.
+ */
+
+function subtractBalance(userId, amount) {
+
+    if (
+        !Number.isInteger(amount) ||
+        amount <= 0
+    ) {
+        throw new Error("Некорректная сумма списания");
+    }
+
+    const result = db.prepare(`
+        UPDATE users
+        SET balance = balance - ?
+        WHERE id = ?
+          AND balance >= ?
+    `).run(
+        amount,
+        userId,
+        amount
+    );
+
+    if (result.changes !== 1) {
+        return false;
+    }
+
+    return true;
+}
+
+
 function setBalance(userId, balance) {
+
+    if (!Number.isInteger(balance) || balance < 0) {
+        throw new Error("Некорректный баланс");
+    }
 
     const result = db.prepare(`
         UPDATE users
@@ -284,6 +352,14 @@ function addTransaction({
     description = ""
 }) {
 
+    if (!type) {
+        throw new Error("Тип транзакции не указан");
+    }
+
+    if (!Number.isInteger(amount)) {
+        throw new Error("Сумма транзакции должна быть целым числом");
+    }
+
     db.prepare(`
         INSERT INTO transactions (
             user_id,
@@ -308,11 +384,19 @@ function addTransaction({
 
 function changeAdminBalance(amount) {
 
-    db.prepare(`
+    if (!Number.isInteger(amount)) {
+        throw new Error("Некорректная сумма админского баланса");
+    }
+
+    const result = db.prepare(`
         UPDATE admin_wallet
         SET balance = balance + ?
         WHERE id = 1
     `).run(amount);
+
+    if (result.changes !== 1) {
+        throw new Error("Не удалось изменить баланс администратора");
+    }
 
     return db.prepare(`
         SELECT balance
@@ -320,6 +404,7 @@ function changeAdminBalance(amount) {
         WHERE id = 1
     `).get();
 }
+
 
 function getAdminBalance() {
 
@@ -347,6 +432,13 @@ function saveSpin({
     playerWin = 0,
     adminCommission = 0
 }) {
+
+    if (
+        !Array.isArray(combo) ||
+        combo.length !== 3
+    ) {
+        throw new Error("Некорректная комбинация");
+    }
 
     db.prepare(`
         INSERT INTO spins (
@@ -382,6 +474,14 @@ function saveSpin({
 
 function getUserSpins(userId, limit = 20) {
 
+    const safeLimit = Math.max(
+        1,
+        Math.min(
+            Number(limit) || 20,
+            100
+        )
+    );
+
     return db.prepare(`
         SELECT
             id,
@@ -400,7 +500,7 @@ function getUserSpins(userId, limit = 20) {
         LIMIT ?
     `).all(
         userId,
-        limit
+        safeLimit
     );
 }
 
@@ -447,16 +547,29 @@ function getAdminStats() {
     };
 }
 
+/*
+|--------------------------------------------------------------------------
+| EXPORT
+|--------------------------------------------------------------------------
+*/
+
 module.exports = {
     db,
+
     getOrCreateUser,
     getUserByTelegramId,
+
     changeBalance,
+    subtractBalance,
     setBalance,
+
     addTransaction,
+
     changeAdminBalance,
     getAdminBalance,
+
     saveSpin,
     getUserSpins,
+
     getAdminStats
 };
