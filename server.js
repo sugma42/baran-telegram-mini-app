@@ -23,7 +23,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 /*
 |--------------------------------------------------------------------------
-| TELEGRAM AUTH – УЛУЧШЕННАЯ
+| TELEGRAM AUTH
 |--------------------------------------------------------------------------
 */
 
@@ -92,12 +92,12 @@ function validateTelegramInitData(initData) {
 
 /*
 |--------------------------------------------------------------------------
-| AUTH – С ПОДДЕРЖКОЙ QUERY-ПАРАМЕТРА И ДЕМО-РЕЖИМА
+| AUTH – С ДЕМО-РЕЖИМОМ, ЕСЛИ НЕТ ТОКЕНА
 |--------------------------------------------------------------------------
 */
 
 function authenticate(req, res, next) {
-    // 1. Если DEMO_MODE=true в .env – сразу пропускаем
+    // 1. Если DEMO_MODE=true – сразу пропускаем
     if (process.env.DEMO_MODE === "true") {
         console.log("🔓 ДЕМО-РЕЖИМ (по DEMO_MODE)");
         req.telegramUser = {
@@ -121,7 +121,7 @@ function authenticate(req, res, next) {
         return next();
     }
 
-    // 3. Ищем initData в заголовке или query-параметре или теле
+    // 3. Ищем initData в заголовке, query или теле
     let initData = req.headers["x-telegram-init-data"];
     if (!initData && req.query.initData) {
         initData = req.query.initData;
@@ -133,7 +133,7 @@ function authenticate(req, res, next) {
     }
 
     if (!initData) {
-        console.warn("⚠️ initData не найден ни в заголовке, ни в query, ни в body");
+        console.warn("⚠️ initData не найден");
         return res.status(401).json({
             success: false,
             error: "Telegram authentication failed: no initData"
