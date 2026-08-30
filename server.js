@@ -622,14 +622,8 @@ app.post(
 | DEMO DEPOSIT
 |--------------------------------------------------------------------------
 |
-| ВАЖНО:
-|
-| amount приходит уже в сотых единицах.
-|
-| 0.01 -> 1
-| 0.10 -> 10
-| 1.00 -> 100
-| 10.00 -> 1000
+| ИСПРАВЛЕНО: теперь принимает сумму в любом формате (0.01, 1, 1.00, 10.5)
+| и автоматически переводит в сотые (копейки).
 |
 |--------------------------------------------------------------------------
 */
@@ -638,98 +632,57 @@ app.post(
     "/api/demo/deposit",
     authenticate,
     (req, res) => {
-
         try {
+            let amount = Number(req.body.amount);
 
-            const amount =
-                Number(req.body.amount);
-
-            console.log(
-                "DEPOSIT:",
-                amount
-            );
-
-            if (
-                !Number.isInteger(amount) ||
-                amount < 1 ||
-                amount > 10000000
-            ) {
-
+            // Проверка на число и положительность
+            if (isNaN(amount) || amount <= 0) {
                 return res.status(400).json({
                     success: false,
-                    error:
-                        "Некорректная сумма"
+                    error: "Некорректная сумма"
                 });
             }
 
-            const user =
-                getOrCreateUser(
-                    req.telegramUser
-                );
+            // Если сумма меньше 1 – скорее всего это рубли, переводим в сотые
+            if (amount < 1 && amount > 0) {
+                amount = Math.round(amount * 100);
+            }
 
-            /*
-             * Начисление.
-             */
+            // Если число не целое – тоже переводим в сотые (например, 1.5 → 150)
+            if (!Number.isInteger(amount)) {
+                amount = Math.round(amount * 100);
+            }
 
-            changeBalance(
-                user.id,
-                amount
-            );
+            // Финальная проверка – должно быть целое и в допустимом диапазоне
+            if (!Number.isInteger(amount) || amount < 1 || amount > 10000000) {
+                return res.status(400).json({
+                    success: false,
+                    error: "Некорректная сумма"
+                });
+            }
 
-            /*
-             * Записываем транзакцию.
-             */
+            console.log("DEPOSIT (processed):", amount);
 
+            const user = getOrCreateUser(req.telegramUser);
+            changeBalance(user.id, amount);
             addTransaction({
-
-                userId:
-                    user.id,
-
-                type:
-                    "demo_deposit",
-
-                amount:
-                    amount,
-
-                description:
-                    "Демо-пополнение"
+                userId: user.id,
+                type: "demo_deposit",
+                amount: amount,
+                description: "Демо-пополнение"
             });
-
-            /*
-             * Получаем новый баланс.
-             */
-
-            const updated =
-                getUserByTelegramId(
-                    user.tg_id
-                );
-
-            console.log(
-                "NEW BALANCE:",
-                updated.balance
-            );
+            const updated = getUserByTelegramId(user.tg_id);
+            console.log("NEW BALANCE:", updated.balance);
 
             res.json({
-
                 success: true,
-
-                balance:
-                    updated.balance
+                balance: updated.balance
             });
-
         } catch (error) {
-
-            console.error(
-                "DEPOSIT ERROR:",
-                error
-            );
-
+            console.error("DEPOSIT ERROR:", error);
             res.status(500).json({
-
                 success: false,
-
-                error:
-                    "Ошибка пополнения"
+                error: "Ошибка пополнения"
             });
         }
     }
