@@ -10,7 +10,7 @@
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
 >
 
-<title>Casino</title>
+<title>Баран Casino</title>
 
 <style>
 
@@ -522,7 +522,7 @@ button:disabled {
                 </div>
 
                 <div class="profile-sub">
-                    Casino
+                    Demo Casino
                 </div>
 
             </div>
@@ -543,7 +543,6 @@ button:disabled {
 
     </div>
 
-
     <div class="hero">
 
         <h1>🎰 Казино</h1>
@@ -554,12 +553,10 @@ button:disabled {
 
     </div>
 
-
     <div
         class="error"
         id="error"
     ></div>
-
 
     <div
         class="slot-card"
@@ -595,11 +592,9 @@ button:disabled {
 
     </div>
 
-
     <div class="section-title">
         Ставка
     </div>
-
 
     <div class="bet-box">
 
@@ -618,7 +613,7 @@ button:disabled {
             </div>
 
             <div class="bet-value">
-                💎 <span id="bet">10.00</span>
+                💎 <span id="bet">1.00</span>
             </div>
 
         </div>
@@ -633,16 +628,14 @@ button:disabled {
 
     </div>
 
-
     <div class="section-title">
         Быстрая ставка
     </div>
 
-
     <div class="quick-bets">
 
         <button
-            class="quick"
+            class="quick active"
             data-value="1"
             type="button"
         >
@@ -650,7 +643,7 @@ button:disabled {
         </button>
 
         <button
-            class="quick active"
+            class="quick"
             data-value="10"
             type="button"
         >
@@ -675,7 +668,6 @@ button:disabled {
 
     </div>
 
-
     <button
         class="spin"
         id="spin"
@@ -684,11 +676,9 @@ button:disabled {
         🎰 КРУТИТЬ
     </button>
 
-
     <div class="section-title">
         Демо-пополнение
     </div>
-
 
     <div class="deposit-box">
 
@@ -699,7 +689,7 @@ button:disabled {
             min="1"
             step="1"
             value="1"
-            inputmode="decimal"
+            inputmode="numeric"
             placeholder="Сумма"
         >
 
@@ -721,11 +711,9 @@ button:disabled {
 
     </div>
 
-
     <div class="section-title">
         Последние игры
     </div>
-
 
     <div
         class="history"
@@ -738,17 +726,14 @@ button:disabled {
 
     </div>
 
-
     <div class="section-title">
         Таблица выплат
     </div>
-
 
     <div
         class="paytable"
         id="paytable"
     ></div>
-
 
     <div
         class="section-title"
@@ -757,7 +742,6 @@ button:disabled {
     >
         Админ
     </div>
-
 
     <div
         class="admin"
@@ -851,23 +835,25 @@ button:disabled {
 
 </div>
 
-
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <script>
 
 "use strict";
 
-
 /*
 |--------------------------------------------------------------------------
-| TELEGRAM
+| TELEGRAM UI
+|--------------------------------------------------------------------------
+|
+| Telegram authentication НЕ используется.
+| Telegram WebApp нужен только для внешнего вида/HapticFeedback.
+|
 |--------------------------------------------------------------------------
 */
 
 const tg =
     window.Telegram?.WebApp || null;
-
 
 if (tg) {
 
@@ -877,18 +863,13 @@ if (tg) {
 
     try {
 
-        tg.setHeaderColor(
-            "#09050f"
-        );
+        tg.setHeaderColor("#09050f");
 
-        tg.setBackgroundColor(
-            "#09050f"
-        );
+        tg.setBackgroundColor("#09050f");
 
-    } catch (e) {}
+    } catch (error) {}
 
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -898,12 +879,11 @@ if (tg) {
 
 let balance = 0;
 
-let bet = 10;
+let bet = 1;
 
 let spinning = false;
 
 let depositing = false;
-
 
 /*
 |--------------------------------------------------------------------------
@@ -917,7 +897,6 @@ const symbols = [
     "🍒",
     "💀"
 ];
-
 
 /*
 |--------------------------------------------------------------------------
@@ -958,7 +937,6 @@ const depositButton =
 const deposit10Button =
     document.getElementById("deposit10");
 
-
 const reels = [
 
     document.getElementById("reel1"),
@@ -969,63 +947,32 @@ const reels = [
 
 ];
 
-
 /*
 |--------------------------------------------------------------------------
 | MONEY
 |--------------------------------------------------------------------------
 |
-| Теперь 1 = 1.
+| ВАЖНО:
 |
+| 1 = 1.00
+| 10 = 10.00
+| 100 = 100.00
+|
+|--------------------------------------------------------------------------
 */
 
 function formatMoney(value) {
 
-    return Number(value || 0).toLocaleString(
+    return Number(
+        value || 0
+    ).toLocaleString(
         "ru-RU",
         {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }
     );
-
 }
-
-
-function toUnits(value) {
-
-    const number =
-        Number(value);
-
-    if (!Number.isFinite(number)) {
-        return 0;
-    }
-
-    return Math.round(number * 100) / 100;
-
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| API HEADERS
-|--------------------------------------------------------------------------
-*/
-
-function apiHeaders() {
-
-    return {
-
-        "Content-Type":
-            "application/json",
-
-        "X-Telegram-Init-Data":
-            tg?.initData || ""
-
-    };
-
-}
-
 
 /*
 |--------------------------------------------------------------------------
@@ -1045,15 +992,15 @@ async function api(
                 ...options,
 
                 headers: {
-                    ...apiHeaders(),
+                    "Content-Type":
+                        "application/json",
+
                     ...(options.headers || {})
                 }
             }
         );
 
-
     let data;
-
 
     try {
 
@@ -1065,9 +1012,7 @@ async function api(
         throw new Error(
             "Сервер вернул некорректный ответ"
         );
-
     }
-
 
     if (
         !response.ok ||
@@ -1078,14 +1023,10 @@ async function api(
             data.error ||
             `Ошибка сервера: ${response.status}`
         );
-
     }
 
-
     return data;
-
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -1101,20 +1042,23 @@ function updateUI() {
     betEl.textContent =
         formatMoney(bet);
 
-
     document
         .querySelectorAll(".quick")
         .forEach(button => {
 
             button.classList.toggle(
                 "active",
-                Number(button.dataset.value) === bet
+                Number(
+                    button.dataset.value
+                ) === bet
             );
-
         });
 
+    spinEl.disabled =
+        spinning ||
+        bet > balance ||
+        balance < 1;
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -1127,21 +1071,23 @@ function showError(message) {
     errorEl.textContent =
         message;
 
-    errorEl.classList.add("show");
+    errorEl.classList.add(
+        "show"
+    );
 
-
-    clearTimeout(showError.timer);
-
+    clearTimeout(
+        showError.timer
+    );
 
     showError.timer =
         setTimeout(() => {
 
-            errorEl.classList.remove("show");
+            errorEl.classList.remove(
+                "show"
+            );
 
         }, 3500);
-
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -1159,9 +1105,7 @@ function showResult(
 
     resultEl.className =
         "result " + type;
-
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -1175,83 +1119,73 @@ function animateReel(
     duration
 ) {
 
-    return new Promise(resolve => {
+    return new Promise(
+        resolve => {
 
-        reel.classList.add("spinning");
+            reel.classList.add(
+                "spinning"
+            );
 
+            const interval =
+                setInterval(() => {
 
-        const interval =
-            setInterval(() => {
+                    reel.textContent =
+                        symbols[
+                            Math.floor(
+                                Math.random() *
+                                symbols.length
+                            )
+                        ];
+
+                }, 65);
+
+            setTimeout(() => {
+
+                clearInterval(
+                    interval
+                );
 
                 reel.textContent =
-                    symbols[
-                        Math.floor(
-                            Math.random() *
-                            symbols.length
-                        )
-                    ];
+                    finalSymbol;
 
-            }, 65);
+                reel.classList.remove(
+                    "spinning"
+                );
 
+                resolve();
 
-        setTimeout(() => {
-
-            clearInterval(interval);
-
-            reel.textContent =
-                finalSymbol;
-
-            reel.classList.remove("spinning");
-
-            resolve();
-
-        }, duration);
-
-    });
-
+            }, duration);
+        }
+    );
 }
-
 
 /*
 |--------------------------------------------------------------------------
-| HISTORY
+| HISTORY ITEM
 |--------------------------------------------------------------------------
 */
 
-function addHistory(
-    combo,
-    multiplier,
-    betAmount,
-    win
+function createHistoryItem(
+    item
 ) {
 
-    const empty =
-        historyEl.querySelector(".empty");
+    const element =
+        document.createElement(
+            "div"
+        );
 
-
-    if (empty) {
-        empty.remove();
-    }
-
-
-    const item =
-        document.createElement("div");
-
-
-    item.className =
+    element.className =
         "history-item";
 
-
     const isWin =
-        Number(win) > 0;
+        Number(item.win) > 0;
 
-
-    item.innerHTML = `
+    element.innerHTML = `
 
         <div>
 
             <div class="history-symbols">
-                ${combo.join("")}
+                ${item.combo.join("")}
             </div>
 
         </div>
@@ -1259,13 +1193,13 @@ function addHistory(
         <div class="history-right">
 
             <div class="history-bet">
-                Ставка ${formatMoney(betAmount)} 💎
+                Ставка ${formatMoney(item.bet)} 💎
             </div>
 
             <div class="history-mult ${isWin ? "win" : "lose"}">
                 ${
                     isWin
-                        ? "+" + formatMoney(win) + " 💎"
+                        ? "+" + formatMoney(item.win) + " 💎"
                         : "×0"
                 }
             </div>
@@ -1274,16 +1208,18 @@ function addHistory(
 
     `;
 
-
-    historyEl.prepend(item);
-
+    return element;
 }
 
+/*
+|--------------------------------------------------------------------------
+| HISTORY
+|--------------------------------------------------------------------------
+*/
 
 function renderHistory(history) {
 
     historyEl.innerHTML = "";
-
 
     if (
         !history ||
@@ -1294,55 +1230,55 @@ function renderHistory(history) {
             '<div class="empty">Здесь появятся результаты</div>';
 
         return;
-
     }
 
+    for (const item of history) {
 
-    history
-        .slice()
-        .reverse()
-        .forEach(item => {
-
-            addHistory(
-                item.combo,
-                item.multiplier,
-                item.bet,
-                item.win
-            );
-
-        });
-
+        historyEl.appendChild(
+            createHistoryItem(item)
+        );
+    }
 }
 
+async function loadHistory() {
+
+    const data =
+        await api(
+            "/api/history"
+        );
+
+    renderHistory(
+        data.history
+    );
+}
 
 /*
 |--------------------------------------------------------------------------
-| LOAD USER
+| USER
 |--------------------------------------------------------------------------
 */
 
 async function loadUser() {
 
     const data =
-        await api("/api/me");
-
+        await api(
+            "/api/me"
+        );
 
     balance =
-        Number(data.user.balance || 0);
+        Number(
+            data.user.balance || 0
+        );
 
-
-    const name =
+    usernameEl.textContent =
         data.user.username
             ? "@" + data.user.username
             : data.user.first_name ||
               "Игрок";
 
-
-    usernameEl.textContent =
-        name;
-
-
-    if (data.user.photo_url) {
+    if (
+        data.user.photo_url
+    ) {
 
         avatarEl.src =
             data.user.photo_url;
@@ -1351,33 +1287,15 @@ async function loadUser() {
 
         avatarEl.src =
             "https://ui-avatars.com/api/?name=" +
-            encodeURIComponent(name) +
+            encodeURIComponent(
+                data.user.first_name ||
+                "Игрок"
+            ) +
             "&background=7c3aed&color=fff";
-
     }
 
-
     updateUI();
-
 }
-
-
-/*
-|--------------------------------------------------------------------------
-| LOAD HISTORY
-|--------------------------------------------------------------------------
-*/
-
-async function loadHistory() {
-
-    const data =
-        await api("/api/history");
-
-
-    renderHistory(data.history);
-
-}
-
 
 /*
 |--------------------------------------------------------------------------
@@ -1391,45 +1309,39 @@ async function spin() {
         return;
     }
 
-
     if (
-        !Number.isFinite(bet) ||
         bet < 1
     ) {
 
         showError(
-            "Минимальная ставка — 1"
+            "Минимальная ставка — 1 💎"
         );
 
         return;
-
     }
 
-
-    if (bet > balance) {
+    if (
+        bet > balance
+    ) {
 
         showError(
             "Недостаточно 💎"
         );
 
         return;
-
     }
-
 
     spinning = true;
 
-    spinEl.disabled = true;
+    updateUI();
 
     spinEl.textContent =
         "⏳ ВРАЩЕНИЕ...";
-
 
     showResult(
         "Барабаны вращаются...",
         "neutral"
     );
-
 
     try {
 
@@ -1441,58 +1353,67 @@ async function spin() {
 
                     body:
                         JSON.stringify({
-                            bet: bet
+                            bet
                         })
                 }
             );
 
-
         const result =
             data.result;
 
+        /*
+         * Анимация.
+         */
 
-        await animateReel(
-            reels[0],
-            result.combo[0],
-            700
-        );
+        await Promise.all([
+            animateReel(
+                reels[0],
+                result.combo[0],
+                700
+            ),
 
+            animateReel(
+                reels[1],
+                result.combo[1],
+                900
+            ),
 
-        await animateReel(
-            reels[1],
-            result.combo[1],
-            900
-        );
+            animateReel(
+                reels[2],
+                result.combo[2],
+                1100
+            )
+        ]);
 
-
-        await animateReel(
-            reels[2],
-            result.combo[2],
-            1100
-        );
-
+        /*
+         * Баланс приходит непосредственно
+         * с сервера.
+         */
 
         balance =
-            Number(data.balance);
-
+            Number(
+                data.balance
+            );
 
         updateUI();
 
-
-        if (result.win > 0) {
+        if (
+            result.win > 0
+        ) {
 
             showResult(
                 `🎉 ×${result.multiplier} +${formatMoney(result.win)} 💎`,
                 "win"
             );
 
+            if (
+                tg?.HapticFeedback
+            ) {
 
-            if (tg?.HapticFeedback) {
-
-                tg.HapticFeedback.notificationOccurred(
-                    "success"
-                );
-
+                tg.HapticFeedback
+                    .notificationOccurred(
+                        "success"
+                    );
             }
 
         } else {
@@ -1501,12 +1422,9 @@ async function spin() {
                 "💀 Не повезло",
                 "lose"
             );
-
         }
 
-
         await loadHistory();
-
 
     } catch (error) {
 
@@ -1515,25 +1433,21 @@ async function spin() {
             error
         );
 
-
         showError(
             error.message ||
-            "Ошибка"
+            "Ошибка игры"
         );
 
     } finally {
 
         spinning = false;
 
-        spinEl.disabled = false;
-
         spinEl.textContent =
             "🎰 КРУТИТЬ";
 
+        updateUI();
     }
-
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -1541,33 +1455,38 @@ async function spin() {
 |--------------------------------------------------------------------------
 */
 
-async function deposit(amount) {
+async function deposit(
+    value
+) {
 
     if (depositing) {
         return;
     }
 
+    const amount =
+        Number(value);
 
-    const numericAmount =
-        Number(amount);
-
+    /*
+     * Только целые единицы.
+     *
+     * 1 = +1.00
+     * 10 = +10.00
+     */
 
     if (
-        !Number.isFinite(numericAmount) ||
-        numericAmount < 1
+        !Number.isInteger(amount) ||
+        amount < 1
     ) {
 
         showError(
-            "Минимум 1 💎"
+            "Минимальное пополнение — 1 💎"
         );
 
         return;
-
     }
 
-
     if (
-        numericAmount > 100000
+        amount > 100000
     ) {
 
         showError(
@@ -1575,17 +1494,13 @@ async function deposit(amount) {
         );
 
         return;
-
     }
 
-
     depositing = true;
-
 
     depositButton.disabled = true;
 
     deposit10Button.disabled = true;
-
 
     try {
 
@@ -1597,34 +1512,44 @@ async function deposit(amount) {
 
                     body:
                         JSON.stringify({
-                            amount:
-                                numericAmount
+                            amount
                         })
                 }
             );
 
+        /*
+         * Получаем актуальный баланс
+         * от сервера.
+         */
 
         balance =
-            Number(data.balance);
-
+            Number(
+                data.balance
+            );
 
         updateUI();
 
-
         showResult(
-            `+${formatMoney(numericAmount)} 💎`,
+            `+${formatMoney(amount)} 💎`,
             "win"
         );
 
+        /*
+         * Очищаем поле.
+         */
 
-        if (tg?.HapticFeedback) {
+        depositInput.value =
+            "";
 
-            tg.HapticFeedback.notificationOccurred(
-                "success"
-            );
+        if (
+            tg?.HapticFeedback
+        ) {
 
+            tg.HapticFeedback
+                .notificationOccurred(
+                    "success"
+                );
         }
-
 
     } catch (error) {
 
@@ -1632,7 +1557,6 @@ async function deposit(amount) {
             "DEPOSIT ERROR:",
             error
         );
-
 
         showError(
             error.message ||
@@ -1646,11 +1570,8 @@ async function deposit(amount) {
         depositButton.disabled = false;
 
         deposit10Button.disabled = false;
-
     }
-
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -1658,111 +1579,128 @@ async function deposit(amount) {
 |--------------------------------------------------------------------------
 */
 
+function getMultiplier(
+    a,
+    b,
+    c
+) {
+
+    if (
+        a === b &&
+        b === c
+    ) {
+
+        if (a === "7️⃣") {
+            return 4;
+        }
+
+        if (a === "🍋") {
+            return 2.5;
+        }
+
+        if (a === "🍒") {
+            return 2;
+        }
+
+        return 0;
+    }
+
+    const counts = {};
+
+    for (
+        const symbol of [a, b, c]
+    ) {
+
+        counts[symbol] =
+            (counts[symbol] || 0) + 1;
+    }
+
+    const max =
+        Math.max(
+            ...Object.values(
+                counts
+            )
+        );
+
+    if (
+        max === 2
+    ) {
+
+        if (
+            counts["7️⃣"] === 2
+        ) {
+            return 1.4;
+        }
+
+        if (
+            counts["🍋"] === 2
+        ) {
+            return 1.15;
+        }
+
+        if (
+            counts["🍒"] === 2
+        ) {
+            return 1.1;
+        }
+    }
+
+    if (
+        a === "🍋" &&
+        b === "🍒" &&
+        c === "🍋"
+    ) {
+
+        return 0.5;
+    }
+
+    if (
+        a === "🍒" &&
+        b === "🍋" &&
+        c === "🍒"
+    ) {
+
+        return 0.5;
+    }
+
+    return 0;
+}
+
 function renderPaytable() {
 
     const paytable =
-        document.getElementById("paytable");
-
+        document.getElementById(
+            "paytable"
+        );
 
     paytable.innerHTML = "";
 
+    for (
+        const a of symbols
+    ) {
 
-    for (const a of symbols) {
+        for (
+            const b of symbols
+        ) {
 
-        for (const b of symbols) {
+            for (
+                const c of symbols
+            ) {
 
-            for (const c of symbols) {
-
-                let multiplier = 0;
-
-
-                if (
-                    a === b &&
-                    b === c
-                ) {
-
-                    if (a === "7️⃣") {
-
-                        multiplier = 4;
-
-                    } else if (a === "🍋") {
-
-                        multiplier = 2.5;
-
-                    } else if (a === "🍒") {
-
-                        multiplier = 2;
-
-                    }
-
-                } else {
-
-                    const counts = {};
-
-
-                    [a, b, c].forEach(
-                        symbol => {
-
-                            counts[symbol] =
-                                (counts[symbol] || 0) + 1;
-
-                        }
+                const multiplier =
+                    getMultiplier(
+                        a,
+                        b,
+                        c
                     );
 
-
-                    const max =
-                        Math.max(
-                            ...Object.values(counts)
-                        );
-
-
-                    if (max === 2) {
-
-                        if (counts["7️⃣"] === 2) {
-
-                            multiplier = 1.4;
-
-                        } else if (counts["🍋"] === 2) {
-
-                            multiplier = 1.15;
-
-                        } else if (counts["🍒"] === 2) {
-
-                            multiplier = 1.1;
-
-                        }
-
-                    } else {
-
-                        if (
-                            (
-                                a === "🍋" &&
-                                b === "🍒" &&
-                                c === "🍋"
-                            ) ||
-                            (
-                                a === "🍒" &&
-                                b === "🍋" &&
-                                c === "🍒"
-                            )
-                        ) {
-
-                            multiplier = 0.5;
-
-                        }
-
-                    }
-
-                }
-
-
                 const row =
-                    document.createElement("div");
-
+                    document.createElement(
+                        "div"
+                    );
 
                 row.className =
                     "pay-row";
-
 
                 row.innerHTML = `
 
@@ -1776,17 +1714,13 @@ function renderPaytable() {
 
                 `;
 
-
-                paytable.appendChild(row);
-
+                paytable.appendChild(
+                    row
+                );
             }
-
         }
-
     }
-
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -1799,70 +1733,87 @@ async function loadAdmin() {
     try {
 
         const data =
-            await api("/api/admin/stats");
+            await api(
+                "/api/admin/stats"
+            );
 
+        const admin =
+            document.getElementById(
+                "admin"
+            );
 
-        document
-            .getElementById("admin")
-            .classList.add("show");
+        const adminTitle =
+            document.getElementById(
+                "adminTitle"
+            );
 
+        admin.classList.add(
+            "show"
+        );
 
-        document
-            .getElementById("adminTitle")
-            .style.display =
+        adminTitle.style.display =
             "block";
-
 
         const stats =
             data.stats;
 
-
         document
-            .getElementById("adminUsers")
+            .getElementById(
+                "adminUsers"
+            )
             .textContent =
             stats.totalUsers;
 
-
         document
-            .getElementById("adminSpins")
+            .getElementById(
+                "adminSpins"
+            )
             .textContent =
             stats.totalSpins;
 
+        document
+            .getElementById(
+                "adminBets"
+            )
+            .textContent =
+            formatMoney(
+                stats.totalBets
+            );
 
         document
-            .getElementById("adminBets")
+            .getElementById(
+                "adminWins"
+            )
             .textContent =
-            formatMoney(stats.totalBets);
-
+            formatMoney(
+                stats.totalPlayerWins
+            );
 
         document
-            .getElementById("adminWins")
+            .getElementById(
+                "adminCommission"
+            )
             .textContent =
-            formatMoney(stats.totalPlayerWins);
-
+            formatMoney(
+                stats.totalCommission
+            );
 
         document
-            .getElementById("adminCommission")
+            .getElementById(
+                "adminBalance"
+            )
             .textContent =
-            formatMoney(stats.totalCommission);
-
-
-        document
-            .getElementById("adminBalance")
-            .textContent =
-            formatMoney(stats.adminBalance);
-
+            formatMoney(
+                stats.adminBalance
+            );
 
     } catch (error) {
 
         console.log(
             "Admin panel unavailable"
         );
-
     }
-
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -1880,19 +1831,15 @@ document
                 return;
             }
 
-
             bet =
                 Math.max(
                     1,
                     bet - 1
                 );
 
-
             updateUI();
-
         }
     );
-
 
 document
     .getElementById("plus")
@@ -1904,21 +1851,22 @@ document
                 return;
             }
 
-
             if (
                 bet + 1 <= balance
             ) {
 
                 bet += 1;
 
+            } else {
+
+                showError(
+                    "Недостаточно 💎"
+                );
             }
 
-
             updateUI();
-
         }
     );
-
 
 document
     .querySelectorAll(".quick")
@@ -1933,12 +1881,10 @@ document
                         return;
                     }
 
-
                     const value =
                         Number(
                             button.dataset.value
                         );
-
 
                     if (
                         value > balance
@@ -1949,44 +1895,36 @@ document
                         );
 
                         return;
-
                     }
-
 
                     bet = value;
 
                     updateUI();
-
                 }
             );
-
         }
     );
-
 
 spinEl.addEventListener(
     "click",
     spin
 );
 
-
 /*
 |--------------------------------------------------------------------------
-| DEPOSIT BUTTON
+| DEPOSIT
 |--------------------------------------------------------------------------
 */
 
 depositButton.addEventListener(
     "click",
-    async () => {
+    () => {
 
-        await deposit(
+        deposit(
             depositInput.value
         );
-
     }
 );
-
 
 /*
 |--------------------------------------------------------------------------
@@ -1996,13 +1934,11 @@ depositButton.addEventListener(
 
 deposit10Button.addEventListener(
     "click",
-    async () => {
+    () => {
 
-        await deposit(10);
-
+        deposit(10);
     }
 );
-
 
 /*
 |--------------------------------------------------------------------------
@@ -2025,20 +1961,17 @@ document
                         .value
                 );
 
-
             if (
-                !Number.isFinite(amount) ||
+                !Number.isInteger(amount) ||
                 amount <= 0
             ) {
 
                 showError(
-                    "Введите сумму"
+                    "Введите целое число"
                 );
 
                 return;
-
             }
-
 
             try {
 
@@ -2050,11 +1983,10 @@ document
 
                             body:
                                 JSON.stringify({
-                                    amount: amount
+                                    amount
                                 })
                         }
                     );
-
 
                 document
                     .getElementById(
@@ -2065,18 +1997,21 @@ document
                         data.adminBalance
                     );
 
+                document
+                    .getElementById(
+                        "withdrawAmount"
+                    )
+                    .value = "";
 
             } catch (error) {
 
                 showError(
-                    error.message
+                    error.message ||
+                    "Ошибка вывода"
                 );
-
             }
-
         }
     );
-
 
 /*
 |--------------------------------------------------------------------------
@@ -2087,7 +2022,6 @@ document
 renderPaytable();
 
 updateUI();
-
 
 (async () => {
 
@@ -2106,16 +2040,13 @@ updateUI();
             error
         );
 
-
         showError(
             error.message ||
             "Не удалось загрузить приложение"
         );
-
     }
 
 })();
-
 </script>
 
 </body>
