@@ -92,12 +92,12 @@ function validateTelegramInitData(initData) {
 
 /*
 |--------------------------------------------------------------------------
-| AUTH – С ДЕМО-РЕЖИМОМ, ЕСЛИ НЕТ ТОКЕНА
+| AUTH (с демо-режимом, если нет BOT_TOKEN)
 |--------------------------------------------------------------------------
 */
 
 function authenticate(req, res, next) {
-    // 1. Если DEMO_MODE=true – сразу пропускаем
+    // Если DEMO_MODE=true – пропускаем
     if (process.env.DEMO_MODE === "true") {
         console.log("🔓 ДЕМО-РЕЖИМ (по DEMO_MODE)");
         req.telegramUser = {
@@ -109,7 +109,7 @@ function authenticate(req, res, next) {
         return next();
     }
 
-    // 2. Если BOT_TOKEN не задан – включаем демо-режим с предупреждением
+    // Если BOT_TOKEN не задан – включаем демо-режим с предупреждением
     if (!process.env.BOT_TOKEN) {
         console.warn("⚠️ BOT_TOKEN не задан – переключение в ДЕМО-РЕЖИМ");
         req.telegramUser = {
@@ -121,15 +121,15 @@ function authenticate(req, res, next) {
         return next();
     }
 
-    // 3. Ищем initData в заголовке, query или теле
+    // Ищем initData в заголовке, query или теле
     let initData = req.headers["x-telegram-init-data"];
     if (!initData && req.query.initData) {
         initData = req.query.initData;
-        console.log("📥 initData взят из query-параметра");
+        console.log("📥 initData из query");
     }
     if (!initData && req.body.initData) {
         initData = req.body.initData;
-        console.log("📥 initData взят из тела запроса");
+        console.log("📥 initData из тела");
     }
 
     if (!initData) {
@@ -140,17 +140,16 @@ function authenticate(req, res, next) {
         });
     }
 
-    // 4. Валидация
     const telegramUser = validateTelegramInitData(initData);
     if (!telegramUser) {
-        console.warn("❌ Валидация initData не пройдена");
+        console.warn("❌ Валидация не пройдена");
         return res.status(401).json({
             success: false,
             error: "Telegram authentication failed: invalid data"
         });
     }
 
-    console.log(`✅ Авторизован пользователь ${telegramUser.id} (${telegramUser.first_name})`);
+    console.log(`✅ Авторизован ${telegramUser.id} (${telegramUser.first_name})`);
     req.telegramUser = telegramUser;
     next();
 }
@@ -347,33 +346,22 @@ app.post("/api/spin", authenticate, (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
-| DEMO DEPOSIT (ИСПРАВЛЕНО)
+| DEMO DEPOSIT (ИСПРАВЛЕНО – строго по документации)
 |--------------------------------------------------------------------------
 */
 
 app.post("/api/demo/deposit", authenticate, (req, res) => {
     try {
-        let amount = Number(req.body.amount);
-        if (isNaN(amount) || amount <= 0) {
-            return res.status(400).json({
-                success: false,
-                error: "Некорректная сумма"
-            });
-        }
-        if (amount < 1 && amount > 0) {
-            amount = Math.round(amount * 100);
-        }
-        if (!Number.isInteger(amount)) {
-            amount = Math.round(amount * 100);
-        }
+        const amount = Number(req.body.amount);
+
+        // Ожидаем целое положительное число (сотые), согласно документации
         if (!Number.isInteger(amount) || amount < 1 || amount > 10000000) {
             return res.status(400).json({
                 success: false,
-                error: "Некорректная сумма"
+                error: "Сумма должна быть целым числом (сотые)"
             });
         }
 
-        console.log("DEPOSIT (processed):", amount);
         const user = getOrCreateUser(req.telegramUser);
         changeBalance(user.id, amount);
         addTransaction({
@@ -383,7 +371,6 @@ app.post("/api/demo/deposit", authenticate, (req, res) => {
             description: "Демо-пополнение"
         });
         const updated = getUserByTelegramId(user.tg_id);
-        console.log("NEW BALANCE:", updated.balance);
 
         res.json({
             success: true,
