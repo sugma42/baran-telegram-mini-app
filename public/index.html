@@ -618,7 +618,7 @@ button:disabled {
             </div>
 
             <div class="bet-value">
-                💎 <span id="bet">0.10</span>
+                💎 <span id="bet">10.00</span>
             </div>
 
         </div>
@@ -646,7 +646,7 @@ button:disabled {
             data-value="1"
             type="button"
         >
-            0.01
+            1.00
         </button>
 
         <button
@@ -654,7 +654,7 @@ button:disabled {
             data-value="10"
             type="button"
         >
-            0.10
+            10.00
         </button>
 
         <button
@@ -662,7 +662,7 @@ button:disabled {
             data-value="100"
             type="button"
         >
-            1.00
+            100.00
         </button>
 
         <button
@@ -670,7 +670,7 @@ button:disabled {
             data-value="1000"
             type="button"
         >
-            10.00
+            1000.00
         </button>
 
     </div>
@@ -696,9 +696,9 @@ button:disabled {
             class="deposit-input"
             id="depositAmount"
             type="number"
-            min="0.01"
-            step="0.01"
-            value="1.00"
+            min="1"
+            step="1"
+            value="1"
             inputmode="decimal"
             placeholder="Сумма"
         >
@@ -716,7 +716,7 @@ button:disabled {
             id="deposit10"
             type="button"
         >
-            +10.00
+            +10
         </button>
 
     </div>
@@ -833,8 +833,8 @@ button:disabled {
             <input
                 id="withdrawAmount"
                 type="number"
-                min="0.01"
-                step="0.01"
+                min="1"
+                step="1"
                 placeholder="Сумма"
             >
 
@@ -926,79 +926,46 @@ const symbols = [
 */
 
 const balanceEl =
-    document.getElementById(
-        "balance"
-    );
+    document.getElementById("balance");
 
 const betEl =
-    document.getElementById(
-        "bet"
-    );
+    document.getElementById("bet");
 
 const resultEl =
-    document.getElementById(
-        "result"
-    );
+    document.getElementById("result");
 
 const spinEl =
-    document.getElementById(
-        "spin"
-    );
+    document.getElementById("spin");
 
 const errorEl =
-    document.getElementById(
-        "error"
-    );
+    document.getElementById("error");
 
 const historyEl =
-    document.getElementById(
-        "history"
-    );
-
-const slotCard =
-    document.getElementById(
-        "slotCard"
-    );
+    document.getElementById("history");
 
 const avatarEl =
-    document.getElementById(
-        "avatar"
-    );
+    document.getElementById("avatar");
 
 const usernameEl =
-    document.getElementById(
-        "username"
-    );
+    document.getElementById("username");
 
 const depositInput =
-    document.getElementById(
-        "depositAmount"
-    );
+    document.getElementById("depositAmount");
 
 const depositButton =
-    document.getElementById(
-        "deposit"
-    );
+    document.getElementById("deposit");
 
 const deposit10Button =
-    document.getElementById(
-        "deposit10"
-    );
+    document.getElementById("deposit10");
 
 
 const reels = [
 
-    document.getElementById(
-        "reel1"
-    ),
+    document.getElementById("reel1"),
 
-    document.getElementById(
-        "reel2"
-    ),
+    document.getElementById("reel2"),
 
-    document.getElementById(
-        "reel3"
-    )
+    document.getElementById("reel3")
 
 ];
 
@@ -1007,13 +974,14 @@ const reels = [
 |--------------------------------------------------------------------------
 | MONEY
 |--------------------------------------------------------------------------
+|
+| Теперь 1 = 1.
+|
 */
 
 function formatMoney(value) {
 
-    return (
-        Number(value || 0) / 100
-    ).toLocaleString(
+    return Number(value || 0).toLocaleString(
         "ru-RU",
         {
             minimumFractionDigits: 2,
@@ -1029,17 +997,11 @@ function toUnits(value) {
     const number =
         Number(value);
 
-    if (
-        !Number.isFinite(number)
-    ) {
-
+    if (!Number.isFinite(number)) {
         return 0;
-
     }
 
-    return Math.round(
-        number * 100
-    );
+    return Math.round(number * 100) / 100;
 
 }
 
@@ -1084,7 +1046,6 @@ async function api(
 
                 headers: {
                     ...apiHeaders(),
-
                     ...(options.headers || {})
                 }
             }
@@ -1147,9 +1108,7 @@ function updateUI() {
 
             button.classList.toggle(
                 "active",
-                Number(
-                    button.dataset.value
-                ) === bet
+                Number(button.dataset.value) === bet
             );
 
         });
@@ -1163,29 +1122,21 @@ function updateUI() {
 |--------------------------------------------------------------------------
 */
 
-function showError(
-    message
-) {
+function showError(message) {
 
     errorEl.textContent =
         message;
 
-    errorEl.classList.add(
-        "show"
-    );
+    errorEl.classList.add("show");
 
 
-    clearTimeout(
-        showError.timer
-    );
+    clearTimeout(showError.timer);
 
 
     showError.timer =
         setTimeout(() => {
 
-            errorEl.classList.remove(
-                "show"
-            );
+            errorEl.classList.remove("show");
 
         }, 3500);
 
@@ -1224,47 +1175,39 @@ function animateReel(
     duration
 ) {
 
-    return new Promise(
-        resolve => {
+    return new Promise(resolve => {
 
-            reel.classList.add(
-                "spinning"
-            );
+        reel.classList.add("spinning");
 
 
-            const interval =
-                setInterval(() => {
-
-                    reel.textContent =
-                        symbols[
-                            Math.floor(
-                                Math.random() *
-                                symbols.length
-                            )
-                        ];
-
-                }, 65);
-
-
-            setTimeout(() => {
-
-                clearInterval(
-                    interval
-                );
+        const interval =
+            setInterval(() => {
 
                 reel.textContent =
-                    finalSymbol;
+                    symbols[
+                        Math.floor(
+                            Math.random() *
+                            symbols.length
+                        )
+                    ];
 
-                reel.classList.remove(
-                    "spinning"
-                );
+            }, 65);
 
-                resolve();
 
-            }, duration);
+        setTimeout(() => {
 
-        }
-    );
+            clearInterval(interval);
+
+            reel.textContent =
+                finalSymbol;
+
+            reel.classList.remove("spinning");
+
+            resolve();
+
+        }, duration);
+
+    });
 
 }
 
@@ -1283,9 +1226,7 @@ function addHistory(
 ) {
 
     const empty =
-        historyEl.querySelector(
-            ".empty"
-        );
+        historyEl.querySelector(".empty");
 
 
     if (empty) {
@@ -1294,9 +1235,7 @@ function addHistory(
 
 
     const item =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
 
     item.className =
@@ -1336,16 +1275,12 @@ function addHistory(
     `;
 
 
-    historyEl.prepend(
-        item
-    );
+    historyEl.prepend(item);
 
 }
 
 
-function renderHistory(
-    history
-) {
+function renderHistory(history) {
 
     historyEl.innerHTML = "";
 
@@ -1363,8 +1298,10 @@ function renderHistory(
     }
 
 
-    history.forEach(
-        item => {
+    history
+        .slice()
+        .reverse()
+        .forEach(item => {
 
             addHistory(
                 item.combo,
@@ -1373,8 +1310,7 @@ function renderHistory(
                 item.win
             );
 
-        }
-    );
+        });
 
 }
 
@@ -1388,15 +1324,11 @@ function renderHistory(
 async function loadUser() {
 
     const data =
-        await api(
-            "/api/me"
-        );
+        await api("/api/me");
 
 
     balance =
-        Number(
-            data.user.balance || 0
-        );
+        Number(data.user.balance || 0);
 
 
     const name =
@@ -1410,9 +1342,7 @@ async function loadUser() {
         name;
 
 
-    if (
-        data.user.photo_url
-    ) {
+    if (data.user.photo_url) {
 
         avatarEl.src =
             data.user.photo_url;
@@ -1441,14 +1371,10 @@ async function loadUser() {
 async function loadHistory() {
 
     const data =
-        await api(
-            "/api/history"
-        );
+        await api("/api/history");
 
 
-    renderHistory(
-        data.history
-    );
+    renderHistory(data.history);
 
 }
 
@@ -1466,10 +1392,13 @@ async function spin() {
     }
 
 
-    if (bet < 1) {
+    if (
+        !Number.isFinite(bet) ||
+        bet < 1
+    ) {
 
         showError(
-            "Минимальная ставка — 0.01"
+            "Минимальная ставка — 1"
         );
 
         return;
@@ -1544,17 +1473,13 @@ async function spin() {
 
 
         balance =
-            Number(
-                data.balance
-            );
+            Number(data.balance);
 
 
         updateUI();
 
 
-        if (
-            result.win > 0
-        ) {
+        if (result.win > 0) {
 
             showResult(
                 `🎉 ×${result.multiplier} +${formatMoney(result.win)} 💎`,
@@ -1562,14 +1487,11 @@ async function spin() {
             );
 
 
-            if (
-                tg?.HapticFeedback
-            ) {
+            if (tg?.HapticFeedback) {
 
-                tg.HapticFeedback
-                    .notificationOccurred(
-                        "success"
-                    );
+                tg.HapticFeedback.notificationOccurred(
+                    "success"
+                );
 
             }
 
@@ -1619,9 +1541,7 @@ async function spin() {
 |--------------------------------------------------------------------------
 */
 
-async function deposit(
-    amount
-) {
+async function deposit(amount) {
 
     if (depositing) {
         return;
@@ -1633,14 +1553,12 @@ async function deposit(
 
 
     if (
-        !Number.isFinite(
-            numericAmount
-        ) ||
-        numericAmount < 0.01
+        !Number.isFinite(numericAmount) ||
+        numericAmount < 1
     ) {
 
         showError(
-            "Минимум 0.01 💎"
+            "Минимум 1 💎"
         );
 
         return;
@@ -1661,26 +1579,6 @@ async function deposit(
     }
 
 
-    const units =
-        toUnits(
-            numericAmount
-        );
-
-
-    if (
-        !Number.isInteger(units) ||
-        units < 1
-    ) {
-
-        showError(
-            "Некорректная сумма"
-        );
-
-        return;
-
-    }
-
-
     depositing = true;
 
 
@@ -1691,17 +1589,6 @@ async function deposit(
 
     try {
 
-        console.log(
-            "DEPOSIT REQUEST:",
-            {
-                amount:
-                    numericAmount,
-
-                units
-            }
-        );
-
-
         const data =
             await api(
                 "/api/demo/deposit",
@@ -1710,69 +1597,33 @@ async function deposit(
 
                     body:
                         JSON.stringify({
-                            amount: units
+                            amount:
+                                numericAmount
                         })
                 }
             );
 
 
-        console.log(
-            "DEPOSIT RESPONSE:",
-            data
-        );
-
-
-        if (
-            !data.success
-        ) {
-
-            throw new Error(
-                data.error ||
-                "Пополнение не выполнено"
-            );
-
-        }
-
-
-        /*
-         * Сервер вернул баланс,
-         * полученный непосредственно
-         * из SQLite.
-         */
-
         balance =
-            Number(
-                data.balance
-            );
+            Number(data.balance);
 
 
         updateUI();
 
 
         showResult(
-            `+${numericAmount.toFixed(2)} 💎`,
+            `+${formatMoney(numericAmount)} 💎`,
             "win"
         );
 
 
-        if (
-            tg?.HapticFeedback
-        ) {
+        if (tg?.HapticFeedback) {
 
-            tg.HapticFeedback
-                .notificationOccurred(
-                    "success"
-                );
+            tg.HapticFeedback.notificationOccurred(
+                "success"
+            );
 
         }
-
-
-        /*
-         * Дополнительная синхронизация
-         * с сервером.
-         */
-
-        await loadUser();
 
 
     } catch (error) {
@@ -1810,25 +1661,17 @@ async function deposit(
 function renderPaytable() {
 
     const paytable =
-        document.getElementById(
-            "paytable"
-        );
+        document.getElementById("paytable");
 
 
     paytable.innerHTML = "";
 
 
-    for (
-        const a of symbols
-    ) {
+    for (const a of symbols) {
 
-        for (
-            const b of symbols
-        ) {
+        for (const b of symbols) {
 
-            for (
-                const c of symbols
-            ) {
+            for (const c of symbols) {
 
                 let multiplier = 0;
 
@@ -1838,21 +1681,15 @@ function renderPaytable() {
                     b === c
                 ) {
 
-                    if (
-                        a === "7️⃣"
-                    ) {
+                    if (a === "7️⃣") {
 
                         multiplier = 4;
 
-                    } else if (
-                        a === "🍋"
-                    ) {
+                    } else if (a === "🍋") {
 
                         multiplier = 2.5;
 
-                    } else if (
-                        a === "🍒"
-                    ) {
+                    } else if (a === "🍒") {
 
                         multiplier = 2;
 
@@ -1863,18 +1700,11 @@ function renderPaytable() {
                     const counts = {};
 
 
-                    [
-                        a,
-                        b,
-                        c
-                    ].forEach(
+                    [a, b, c].forEach(
                         symbol => {
 
                             counts[symbol] =
-                                (
-                                    counts[symbol] ||
-                                    0
-                                ) + 1;
+                                (counts[symbol] || 0) + 1;
 
                         }
                     );
@@ -1882,31 +1712,21 @@ function renderPaytable() {
 
                     const max =
                         Math.max(
-                            ...Object.values(
-                                counts
-                            )
+                            ...Object.values(counts)
                         );
 
 
-                    if (
-                        max === 2
-                    ) {
+                    if (max === 2) {
 
-                        if (
-                            counts["7️⃣"] === 2
-                        ) {
+                        if (counts["7️⃣"] === 2) {
 
                             multiplier = 1.4;
 
-                        } else if (
-                            counts["🍋"] === 2
-                        ) {
+                        } else if (counts["🍋"] === 2) {
 
                             multiplier = 1.15;
 
-                        } else if (
-                            counts["🍒"] === 2
-                        ) {
+                        } else if (counts["🍒"] === 2) {
 
                             multiplier = 1.1;
 
@@ -1915,9 +1735,16 @@ function renderPaytable() {
                     } else {
 
                         if (
-                            a === "🍋" &&
-                            b === "🍒" &&
-                            c === "🍋"
+                            (
+                                a === "🍋" &&
+                                b === "🍒" &&
+                                c === "🍋"
+                            ) ||
+                            (
+                                a === "🍒" &&
+                                b === "🍋" &&
+                                c === "🍒"
+                            )
                         ) {
 
                             multiplier = 0.5;
@@ -1930,9 +1757,7 @@ function renderPaytable() {
 
 
                 const row =
-                    document.createElement(
-                        "div"
-                    );
+                    document.createElement("div");
 
 
                 row.className =
@@ -1952,9 +1777,7 @@ function renderPaytable() {
                 `;
 
 
-                paytable.appendChild(
-                    row
-                );
+                paytable.appendChild(row);
 
             }
 
@@ -1976,24 +1799,16 @@ async function loadAdmin() {
     try {
 
         const data =
-            await api(
-                "/api/admin/stats"
-            );
+            await api("/api/admin/stats");
 
 
         document
-            .getElementById(
-                "admin"
-            )
-            .classList.add(
-                "show"
-            );
+            .getElementById("admin")
+            .classList.add("show");
 
 
         document
-            .getElementById(
-                "adminTitle"
-            )
+            .getElementById("adminTitle")
             .style.display =
             "block";
 
@@ -2003,59 +1818,39 @@ async function loadAdmin() {
 
 
         document
-            .getElementById(
-                "adminUsers"
-            )
+            .getElementById("adminUsers")
             .textContent =
             stats.totalUsers;
 
 
         document
-            .getElementById(
-                "adminSpins"
-            )
+            .getElementById("adminSpins")
             .textContent =
             stats.totalSpins;
 
 
         document
-            .getElementById(
-                "adminBets"
-            )
+            .getElementById("adminBets")
             .textContent =
-            formatMoney(
-                stats.totalBets
-            );
+            formatMoney(stats.totalBets);
 
 
         document
-            .getElementById(
-                "adminWins"
-            )
+            .getElementById("adminWins")
             .textContent =
-            formatMoney(
-                stats.totalPlayerWins
-            );
+            formatMoney(stats.totalPlayerWins);
 
 
         document
-            .getElementById(
-                "adminCommission"
-            )
+            .getElementById("adminCommission")
             .textContent =
-            formatMoney(
-                stats.totalCommission
-            );
+            formatMoney(stats.totalCommission);
 
 
         document
-            .getElementById(
-                "adminBalance"
-            )
+            .getElementById("adminBalance")
             .textContent =
-            formatMoney(
-                stats.adminBalance
-            );
+            formatMoney(stats.adminBalance);
 
 
     } catch (error) {
@@ -2076,9 +1871,7 @@ async function loadAdmin() {
 */
 
 document
-    .getElementById(
-        "minus"
-    )
+    .getElementById("minus")
     .addEventListener(
         "click",
         () => {
@@ -2102,9 +1895,7 @@ document
 
 
 document
-    .getElementById(
-        "plus"
-    )
+    .getElementById("plus")
     .addEventListener(
         "click",
         () => {
@@ -2130,9 +1921,7 @@ document
 
 
 document
-    .querySelectorAll(
-        ".quick"
-    )
+    .querySelectorAll(".quick")
     .forEach(
         button => {
 
@@ -2209,9 +1998,7 @@ deposit10Button.addEventListener(
     "click",
     async () => {
 
-        await deposit(
-            10
-        );
+        await deposit(10);
 
     }
 );
@@ -2224,9 +2011,7 @@ deposit10Button.addEventListener(
 */
 
 document
-    .getElementById(
-        "withdraw"
-    )
+    .getElementById("withdraw")
     .addEventListener(
         "click",
         async () => {
@@ -2242,7 +2027,7 @@ document
 
 
             if (
-                !amount ||
+                !Number.isFinite(amount) ||
                 amount <= 0
             ) {
 
@@ -2265,10 +2050,7 @@ document
 
                             body:
                                 JSON.stringify({
-                                    amount:
-                                        toUnits(
-                                            amount
-                                        )
+                                    amount: amount
                                 })
                         }
                     );
