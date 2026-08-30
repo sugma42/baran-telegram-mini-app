@@ -1,470 +1,876 @@
 "use strict";
 
-const Database = require("better-sqlite3");
+require("dotenv").config();
+
+const express = require("express");
 const path = require("path");
-const fs = require("fs");
 
-const dataDir = path.join(__dirname, "data");
+const {
+    getOrCreateUser,
+    getUserByTelegramId,
+    changeBalance,
+    subtractBalance,
+    addTransaction,
+    changeAdminBalance,
+    getAdminStats,
+    saveSpin,
+    getUserSpins
+} = require("./database");
 
-if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+
+const app = express();
+
+const PORT =
+    Number(process.env.PORT) || 3000;
+
+
+/*
+|--------------------------------------------------------------------------
+| EXPRESS
+|--------------------------------------------------------------------------
+*/
+
+app.use(express.json());
+
+app.use(
+    express.static(
+        path.join(__dirname, "public")
+    )
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| DEMO USER
+|--------------------------------------------------------------------------
+|
+| Telegram authentication полностью отключена.
+|
+| Все посетители используют одного
+| демо-пользователя.
+|
+|--------------------------------------------------------------------------
+*/
+
+const DEMO_USER = {
+    id: "123456789",
+    username: "demo_user",
+    first_name: "Demo",
+    photo_url: ""
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| USER
+|--------------------------------------------------------------------------
+*/
+
+function getDemoUser() {
+
+    return getOrCreateUser(
+        DEMO_USER
+    );
+
 }
 
-const dbPath = path.join(dataDir, "baran.db");
-
-const db = new Database(dbPath);
-
-db.pragma("journal_mode = WAL");
-db.pragma("foreign_keys = ON");
 
 /*
 |--------------------------------------------------------------------------
-| USERS
-|--------------------------------------------------------------------------
-|
-| Баланс хранится напрямую:
-|
-| 1   = 1 💎
-| 10  = 10 💎
-| 100 = 100 💎
-|
+| HOME
 |--------------------------------------------------------------------------
 */
 
-db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tg_id TEXT UNIQUE NOT NULL,
-        username TEXT,
-        first_name TEXT,
-        photo_url TEXT,
-        balance INTEGER NOT NULL DEFAULT 100000,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-`);
+app.get(
+    "/",
+    (req, res) => {
 
-/*
-|--------------------------------------------------------------------------
-| MIGRATION
-|--------------------------------------------------------------------------
-*/
-
-const userColumns = db
-    .prepare("PRAGMA table_info(users)")
-    .all()
-    .map(row => row.name);
-
-if (!userColumns.includes("photo_url")) {
-    db.exec(`
-        ALTER TABLE users
-        ADD COLUMN photo_url TEXT
-    `);
-}
-
-/*
-|--------------------------------------------------------------------------
-| SPINS
-|--------------------------------------------------------------------------
-*/
-
-db.exec(`
-    CREATE TABLE IF NOT EXISTS spins (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-        user_id INTEGER NOT NULL,
-
-        bet INTEGER NOT NULL,
-
-        symbol1 TEXT NOT NULL,
-        symbol2 TEXT NOT NULL,
-        symbol3 TEXT NOT NULL,
-
-        multiplier REAL NOT NULL,
-
-        win INTEGER NOT NULL DEFAULT 0,
-        player_win INTEGER NOT NULL DEFAULT 0,
-        admin_commission INTEGER NOT NULL DEFAULT 0,
-
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-
-        FOREIGN KEY (user_id)
-            REFERENCES users(id)
-            ON DELETE CASCADE
-    );
-`);
-
-/*
-|--------------------------------------------------------------------------
-| TRANSACTIONS
-|--------------------------------------------------------------------------
-*/
-
-db.exec(`
-    CREATE TABLE IF NOT EXISTS transactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-        user_id INTEGER,
-
-        type TEXT NOT NULL,
-
-        amount INTEGER NOT NULL,
-
-        description TEXT,
-
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-
-        FOREIGN KEY (user_id)
-            REFERENCES users(id)
-            ON DELETE SET NULL
-    );
-`);
-
-/*
-|--------------------------------------------------------------------------
-| ADMIN WALLET
-|--------------------------------------------------------------------------
-*/
-
-db.exec(`
-    CREATE TABLE IF NOT EXISTS admin_wallet (
-        id INTEGER PRIMARY KEY CHECK (id = 1),
-        balance INTEGER NOT NULL DEFAULT 0
-    );
-
-    INSERT OR IGNORE INTO admin_wallet (id, balance)
-    VALUES (1, 0);
-`);
-
-/*
-|--------------------------------------------------------------------------
-| INDEXES
-|--------------------------------------------------------------------------
-*/
-
-db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_users_tg_id
-    ON users(tg_id);
-
-    CREATE INDEX IF NOT EXISTS idx_spins_user_id
-    ON spins(user_id);
-
-    CREATE INDEX IF NOT EXISTS idx_spins_created_at
-    ON spins(created_at);
-
-    CREATE INDEX IF NOT EXISTS idx_transactions_user_id
-    ON transactions(user_id);
-`);
-
-/*
-|--------------------------------------------------------------------------
-| USERS
-|--------------------------------------------------------------------------
-*/
-
-function getOrCreateUser(telegramUser) {
-
-    if (!telegramUser || !telegramUser.id) {
-        throw new Error("Telegram user не передан");
-    }
-
-    const tgId = String(telegramUser.id);
-
-    let user = db.prepare(`
-        SELECT *
-        FROM users
-        WHERE tg_id = ?
-    `).get(tgId);
-
-    if (user) {
-
-        db.prepare(`
-            UPDATE users
-            SET
-                username = ?,
-                first_name = ?,
-                photo_url = ?
-            WHERE tg_id = ?
-        `).run(
-            telegramUser.username || null,
-            telegramUser.first_name || null,
-            telegramUser.photo_url || null,
-            tgId
+        res.sendFile(
+            path.join(
+                __dirname,
+                "public",
+                "index.html"
+            )
         );
 
-        return db.prepare(`
-            SELECT *
-            FROM users
-            WHERE tg_id = ?
-        `).get(tgId);
     }
+);
 
-    const result = db.prepare(`
-        INSERT INTO users (
-            tg_id,
-            username,
-            first_name,
-            photo_url,
-            balance
-        )
-        VALUES (?, ?, ?, ?, ?)
-    `).run(
-        tgId,
-        telegramUser.username || null,
-        telegramUser.first_name || null,
-        telegramUser.photo_url || null,
-        100000
-    );
-
-    return db.prepare(`
-        SELECT *
-        FROM users
-        WHERE id = ?
-    `).get(result.lastInsertRowid);
-}
-
-
-function getUserByTelegramId(tgId) {
-
-    return db.prepare(`
-        SELECT *
-        FROM users
-        WHERE tg_id = ?
-    `).get(String(tgId));
-}
 
 /*
 |--------------------------------------------------------------------------
-| BALANCE
+| ME
 |--------------------------------------------------------------------------
 */
 
+app.get(
+    "/api/me",
+    (req, res) => {
+
+        try {
+
+            const user =
+                getDemoUser();
+
+
+            res.json({
+
+                success: true,
+
+                user: {
+
+                    id:
+                        user.id,
+
+                    telegram_id:
+                        user.tg_id,
+
+                    username:
+                        user.username,
+
+                    first_name:
+                        user.first_name,
+
+                    photo_url:
+                        user.photo_url,
+
+                    balance:
+                        Number(
+                            user.balance || 0
+                        )
+
+                }
+
+            });
+
+        } catch (error) {
+
+            console.error(
+                "ME ERROR:",
+                error
+            );
+
+            res.status(500).json({
+
+                success: false,
+
+                error:
+                    "Не удалось получить пользователя"
+
+            });
+
+        }
+
+    }
+);
+
+
 /*
- * Простое изменение баланса.
- *
- * 1 = +1
- * 10 = +10
- * -5 = -5
- */
+|--------------------------------------------------------------------------
+| SYMBOLS
+|--------------------------------------------------------------------------
+*/
 
-function changeBalance(userId, amount) {
+const symbols = [
+    "🍋",
+    "7️⃣",
+    "🍒",
+    "💀"
+];
 
-    if (!Number.isInteger(amount)) {
-        throw new Error("Баланс должен изменяться целым числом");
+
+/*
+|--------------------------------------------------------------------------
+| COMBINATIONS
+|--------------------------------------------------------------------------
+*/
+
+const combinations = [];
+
+
+for (const a of symbols) {
+
+    for (const b of symbols) {
+
+        for (const c of symbols) {
+
+            let multiplier = 0;
+
+
+            /*
+             * Три одинаковых.
+             */
+
+            if (
+                a === b &&
+                b === c
+            ) {
+
+                if (
+                    a === "7️⃣"
+                ) {
+
+                    multiplier = 4;
+
+                } else if (
+                    a === "🍋"
+                ) {
+
+                    multiplier = 2.5;
+
+                } else if (
+                    a === "🍒"
+                ) {
+
+                    multiplier = 2;
+
+                }
+
+            } else {
+
+                const counts = {};
+
+
+                for (
+                    const symbol
+                    of [a, b, c]
+                ) {
+
+                    counts[symbol] =
+                        (
+                            counts[symbol] ||
+                            0
+                        ) + 1;
+
+                }
+
+
+                const maxCount =
+                    Math.max(
+                        ...Object.values(
+                            counts
+                        )
+                    );
+
+
+                /*
+                 * Два одинаковых.
+                 */
+
+                if (
+                    maxCount === 2
+                ) {
+
+                    if (
+                        counts["7️⃣"] === 2
+                    ) {
+
+                        multiplier = 1.4;
+
+                    } else if (
+                        counts["🍋"] === 2
+                    ) {
+
+                        multiplier = 1.15;
+
+                    } else if (
+                        counts["🍒"] === 2
+                    ) {
+
+                        multiplier = 1.1;
+
+                    }
+
+                } else {
+
+                    /*
+                     * Специальные комбинации.
+                     */
+
+                    if (
+                        (
+                            a === "🍋" &&
+                            b === "🍒" &&
+                            c === "🍋"
+                        ) ||
+                        (
+                            a === "🍒" &&
+                            b === "🍋" &&
+                            c === "🍒"
+                        )
+                    ) {
+
+                        multiplier = 0.5;
+
+                    }
+
+                }
+
+            }
+
+
+            /*
+             * Вес.
+             */
+
+            let weight = 10;
+
+
+            if (
+                multiplier >= 4
+            ) {
+
+                weight = 0.4;
+
+            } else if (
+                multiplier >= 2
+            ) {
+
+                weight = 1.5;
+
+            } else if (
+                multiplier >= 1.4
+            ) {
+
+                weight = 3;
+
+            } else if (
+                multiplier >= 1
+            ) {
+
+                weight = 5;
+
+            } else if (
+                multiplier > 0
+            ) {
+
+                weight = 7;
+
+            }
+
+
+            combinations.push({
+
+                combo: [
+                    a,
+                    b,
+                    c
+                ],
+
+                multiplier,
+
+                weight
+
+            });
+
+        }
+
     }
 
-    const result = db.prepare(`
-        UPDATE users
-        SET balance = balance + ?
-        WHERE id = ?
-    `).run(
-        amount,
-        userId
-    );
-
-    if (result.changes !== 1) {
-        throw new Error(
-            `Не удалось изменить баланс. User ID: ${userId}`
-        );
-    }
-
-    return db.prepare(`
-        SELECT balance
-        FROM users
-        WHERE id = ?
-    `).get(userId);
 }
 
 
 /*
- * Атомарно списывает деньги.
- *
- * Важно:
- * UPDATE выполнится только если
- * на балансе достаточно средств.
- */
+|--------------------------------------------------------------------------
+| RANDOM
+|--------------------------------------------------------------------------
+*/
 
-function subtractBalance(userId, amount) {
+const totalWeight =
+    combinations.reduce(
+        (sum, item) =>
+            sum + item.weight,
+        0
+    );
 
-    if (
-        !Number.isInteger(amount) ||
-        amount <= 0
+
+function getRandomCombination() {
+
+    let random =
+        Math.random() *
+        totalWeight;
+
+
+    for (
+        const item
+        of combinations
     ) {
-        throw new Error("Некорректная сумма списания");
+
+        random -= item.weight;
+
+
+        if (
+            random <= 0
+        ) {
+
+            return item;
+
+        }
+
     }
 
-    const result = db.prepare(`
-        UPDATE users
-        SET balance = balance - ?
-        WHERE id = ?
-          AND balance >= ?
-    `).run(
-        amount,
-        userId,
-        amount
-    );
 
-    if (result.changes !== 1) {
-        return false;
-    }
+    return combinations[
+        combinations.length - 1
+    ];
 
-    return true;
 }
 
-
-function setBalance(userId, balance) {
-
-    if (!Number.isInteger(balance) || balance < 0) {
-        throw new Error("Некорректный баланс");
-    }
-
-    const result = db.prepare(`
-        UPDATE users
-        SET balance = ?
-        WHERE id = ?
-    `).run(
-        balance,
-        userId
-    );
-
-    if (result.changes !== 1) {
-        throw new Error(
-            `Не удалось установить баланс. User ID: ${userId}`
-        );
-    }
-
-    return db.prepare(`
-        SELECT balance
-        FROM users
-        WHERE id = ?
-    `).get(userId);
-}
-
-/*
-|--------------------------------------------------------------------------
-| TRANSACTIONS
-|--------------------------------------------------------------------------
-*/
-
-function addTransaction({
-    userId = null,
-    type,
-    amount,
-    description = ""
-}) {
-
-    if (!type) {
-        throw new Error("Тип транзакции не указан");
-    }
-
-    if (!Number.isInteger(amount)) {
-        throw new Error("Сумма транзакции должна быть целым числом");
-    }
-
-    db.prepare(`
-        INSERT INTO transactions (
-            user_id,
-            type,
-            amount,
-            description
-        )
-        VALUES (?, ?, ?, ?)
-    `).run(
-        userId,
-        type,
-        amount,
-        description
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| ADMIN BALANCE
-|--------------------------------------------------------------------------
-*/
-
-function changeAdminBalance(amount) {
-
-    if (!Number.isInteger(amount)) {
-        throw new Error("Некорректная сумма админского баланса");
-    }
-
-    const result = db.prepare(`
-        UPDATE admin_wallet
-        SET balance = balance + ?
-        WHERE id = 1
-    `).run(amount);
-
-    if (result.changes !== 1) {
-        throw new Error("Не удалось изменить баланс администратора");
-    }
-
-    return db.prepare(`
-        SELECT balance
-        FROM admin_wallet
-        WHERE id = 1
-    `).get();
-}
-
-
-function getAdminBalance() {
-
-    const row = db.prepare(`
-        SELECT balance
-        FROM admin_wallet
-        WHERE id = 1
-    `).get();
-
-    return row ? row.balance : 0;
-}
 
 /*
 |--------------------------------------------------------------------------
 | SPIN
 |--------------------------------------------------------------------------
+|
+| В этой версии:
+|
+| 1 = 1 💎
+| 10 = 10 💎
+| 100 = 100 💎
+|
+|--------------------------------------------------------------------------
 */
 
-function saveSpin({
-    userId,
-    bet,
-    combo,
-    multiplier,
-    win,
-    playerWin = 0,
-    adminCommission = 0
-}) {
+app.post(
+    "/api/spin",
+    (req, res) => {
 
-    if (
-        !Array.isArray(combo) ||
-        combo.length !== 3
-    ) {
-        throw new Error("Некорректная комбинация");
+        try {
+
+            const user =
+                getDemoUser();
+
+
+            const bet =
+                Number(
+                    req.body.bet
+                );
+
+
+            /*
+             * Только целые значения.
+             */
+
+            if (
+                !Number.isInteger(bet) ||
+                bet < 1
+            ) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    error:
+                        "Минимальная ставка — 1"
+
+                });
+
+            }
+
+
+            /*
+             * Ограничение.
+             */
+
+            if (
+                bet > 100000
+            ) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    error:
+                        "Слишком большая ставка"
+
+                });
+
+            }
+
+
+            /*
+             * Атомарно списываем ставку.
+             */
+
+            const charged =
+                subtractBalance(
+                    user.id,
+                    bet
+                );
+
+
+            if (!charged) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    error:
+                        "Недостаточно баланса"
+
+                });
+
+            }
+
+
+            /*
+             * Получаем комбинацию.
+             */
+
+            const result =
+                getRandomCombination();
+
+
+            /*
+             * Выигрыш.
+             *
+             * Округляем вниз до целого,
+             * потому что database.js
+             * хранит баланс INTEGER.
+             */
+
+            const grossWin =
+                Math.floor(
+                    bet *
+                    result.multiplier
+                );
+
+
+            /*
+             * Комиссия 10%.
+             */
+
+            let adminCommission = 0;
+
+            let playerWin =
+                grossWin;
+
+
+            if (
+                grossWin > 0
+            ) {
+
+                adminCommission =
+                    Math.floor(
+                        grossWin * 0.10
+                    );
+
+
+                playerWin =
+                    grossWin -
+                    adminCommission;
+
+            }
+
+
+            /*
+             * Начисляем выигрыш.
+             */
+
+            if (
+                playerWin > 0
+            ) {
+
+                changeBalance(
+                    user.id,
+                    playerWin
+                );
+
+            }
+
+
+            /*
+             * Начисляем комиссию админу.
+             */
+
+            if (
+                adminCommission > 0
+            ) {
+
+                changeAdminBalance(
+                    adminCommission
+                );
+
+            }
+
+
+            /*
+             * Сохраняем игру.
+             */
+
+            saveSpin({
+
+                userId:
+                    user.id,
+
+                bet:
+                    bet,
+
+                combo:
+                    result.combo,
+
+                multiplier:
+                    result.multiplier,
+
+                win:
+                    grossWin,
+
+                playerWin:
+                    playerWin,
+
+                adminCommission:
+                    adminCommission
+
+            });
+
+
+            /*
+             * Чистая сумма изменения
+             * баланса игрока.
+             */
+
+            addTransaction({
+
+                userId:
+                    user.id,
+
+                type:
+                    "spin",
+
+                amount:
+                    playerWin - bet,
+
+                description:
+                    `Ставка ${bet}, результат ${result.multiplier}x`
+
+            });
+
+
+            /*
+             * Получаем актуальный баланс.
+             */
+
+            const updatedUser =
+                getUserByTelegramId(
+                    user.tg_id
+                );
+
+
+            res.json({
+
+                success: true,
+
+                result: {
+
+                    combo:
+                        result.combo,
+
+                    multiplier:
+                        result.multiplier,
+
+                    win:
+                        playerWin,
+
+                    grossWin:
+                        grossWin,
+
+                    adminCommission:
+                        adminCommission,
+
+                    bet:
+                        bet
+
+                },
+
+                balance:
+                    Number(
+                        updatedUser.balance
+                    )
+
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "SPIN ERROR:",
+                error
+            );
+
+
+            res.status(500).json({
+
+                success: false,
+
+                error:
+                    "Ошибка сервера"
+
+            });
+
+        }
+
     }
+);
 
-    db.prepare(`
-        INSERT INTO spins (
-            user_id,
-            bet,
-            symbol1,
-            symbol2,
-            symbol3,
-            multiplier,
-            win,
-            player_win,
-            admin_commission
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-        userId,
-        bet,
-        combo[0],
-        combo[1],
-        combo[2],
-        multiplier,
-        win,
-        playerWin,
-        adminCommission
-    );
-}
+
+/*
+|--------------------------------------------------------------------------
+| DEMO DEPOSIT
+|--------------------------------------------------------------------------
+|
+| Теперь сумма передаётся напрямую.
+|
+| 1   -> +1
+| 10  -> +10
+| 100 -> +100
+|
+|--------------------------------------------------------------------------
+*/
+
+app.post(
+    "/api/demo/deposit",
+    (req, res) => {
+
+        try {
+
+            const amount =
+                Number(
+                    req.body.amount
+                );
+
+
+            /*
+             * Проверяем сумму.
+             */
+
+            if (
+                !Number.isInteger(amount) ||
+                amount < 1
+            ) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    error:
+                        "Минимальная сумма — 1"
+
+                });
+
+            }
+
+
+            /*
+             * Ограничение.
+             */
+
+            if (
+                amount > 100000
+            ) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    error:
+                        "Слишком большая сумма"
+
+                });
+
+            }
+
+
+            /*
+             * Пользователь.
+             */
+
+            const user =
+                getDemoUser();
+
+
+            /*
+             * Пополняем баланс.
+             *
+             * 1 = +1
+             */
+
+            changeBalance(
+                user.id,
+                amount
+            );
+
+
+            /*
+             * Записываем транзакцию.
+             */
+
+            addTransaction({
+
+                userId:
+                    user.id,
+
+                type:
+                    "demo_deposit",
+
+                amount:
+                    amount,
+
+                description:
+                    `Демо-пополнение +${amount}`
+
+            });
+
+
+            /*
+             * Получаем новый баланс
+             * напрямую из SQLite.
+             */
+
+            const updatedUser =
+                getUserByTelegramId(
+                    user.tg_id
+                );
+
+
+            console.log(
+                `DEPOSIT +${amount} | BALANCE ${updatedUser.balance}`
+            );
+
+
+            res.json({
+
+                success: true,
+
+                balance:
+                    Number(
+                        updatedUser.balance
+                    )
+
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "DEPOSIT ERROR:",
+                error
+            );
+
+
+            res.status(500).json({
+
+                success: false,
+
+                error:
+                    "Ошибка пополнения"
+
+            });
+
+        }
+
+    }
+);
+
 
 /*
 |--------------------------------------------------------------------------
@@ -472,37 +878,84 @@ function saveSpin({
 |--------------------------------------------------------------------------
 */
 
-function getUserSpins(userId, limit = 20) {
+app.get(
+    "/api/history",
+    (req, res) => {
 
-    const safeLimit = Math.max(
-        1,
-        Math.min(
-            Number(limit) || 20,
-            100
-        )
-    );
+        try {
 
-    return db.prepare(`
-        SELECT
-            id,
-            bet,
-            symbol1,
-            symbol2,
-            symbol3,
-            multiplier,
-            win,
-            player_win,
-            admin_commission,
-            created_at
-        FROM spins
-        WHERE user_id = ?
-        ORDER BY id DESC
-        LIMIT ?
-    `).all(
-        userId,
-        safeLimit
-    );
-}
+            const user =
+                getDemoUser();
+
+
+            const history =
+                getUserSpins(
+                    user.id,
+                    20
+                );
+
+
+            res.json({
+
+                success: true,
+
+                history:
+                    history.map(
+                        spin => ({
+
+                            id:
+                                spin.id,
+
+                            bet:
+                                spin.bet,
+
+                            combo: [
+
+                                spin.symbol1,
+
+                                spin.symbol2,
+
+                                spin.symbol3
+
+                            ],
+
+                            multiplier:
+                                spin.multiplier,
+
+                            win:
+                                spin.player_win,
+
+                            created_at:
+                                spin.created_at
+
+                        })
+                    )
+
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "HISTORY ERROR:",
+                error
+            );
+
+
+            res.status(500).json({
+
+                success: false,
+
+                error:
+                    "Не удалось получить историю"
+
+            });
+
+        }
+
+    }
+);
+
 
 /*
 |--------------------------------------------------------------------------
@@ -510,66 +963,219 @@ function getUserSpins(userId, limit = 20) {
 |--------------------------------------------------------------------------
 */
 
-function getAdminStats() {
+app.get(
+    "/api/admin/stats",
+    (req, res) => {
 
-    const totalUsers = db.prepare(`
-        SELECT COUNT(*) AS count
-        FROM users
-    `).get().count;
+        try {
 
-    const totalSpins = db.prepare(`
-        SELECT COUNT(*) AS count
-        FROM spins
-    `).get().count;
+            const stats =
+                getAdminStats();
 
-    const totalBets = db.prepare(`
-        SELECT COALESCE(SUM(bet), 0) AS amount
-        FROM spins
-    `).get().amount;
 
-    const totalPlayerWins = db.prepare(`
-        SELECT COALESCE(SUM(player_win), 0) AS amount
-        FROM spins
-    `).get().amount;
+            res.json({
 
-    const totalCommission = db.prepare(`
-        SELECT COALESCE(SUM(admin_commission), 0) AS amount
-        FROM spins
-    `).get().amount;
+                success: true,
 
-    return {
-        totalUsers,
-        totalSpins,
-        totalBets,
-        totalPlayerWins,
-        totalCommission,
-        adminBalance: getAdminBalance()
-    };
-}
+                stats
+
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "ADMIN STATS ERROR:",
+                error
+            );
+
+
+            res.status(500).json({
+
+                success: false,
+
+                error:
+                    "Не удалось получить статистику"
+
+            });
+
+        }
+
+    }
+);
+
 
 /*
 |--------------------------------------------------------------------------
-| EXPORT
+| ADMIN WITHDRAW
 |--------------------------------------------------------------------------
 */
 
-module.exports = {
-    db,
+app.post(
+    "/api/admin/demo-withdraw",
+    (req, res) => {
 
-    getOrCreateUser,
-    getUserByTelegramId,
+        try {
 
-    changeBalance,
-    subtractBalance,
-    setBalance,
+            const amount =
+                Number(
+                    req.body.amount
+                );
 
-    addTransaction,
 
-    changeAdminBalance,
-    getAdminBalance,
+            if (
+                !Number.isInteger(amount) ||
+                amount <= 0
+            ) {
 
-    saveSpin,
-    getUserSpins,
+                return res.status(400).json({
 
-    getAdminStats
-};
+                    success: false,
+
+                    error:
+                        "Некорректная сумма"
+
+                });
+
+            }
+
+
+            if (
+                amount > 100000
+            ) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    error:
+                        "Слишком большая сумма"
+
+                });
+
+            }
+
+
+            const stats =
+                getAdminStats();
+
+
+            if (
+                Number(stats.adminBalance) <
+                amount
+            ) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    error:
+                        "Недостаточно средств"
+
+                });
+
+            }
+
+
+            changeAdminBalance(
+                -amount
+            );
+
+
+            const updatedStats =
+                getAdminStats();
+
+
+            res.json({
+
+                success: true,
+
+                adminBalance:
+                    Number(
+                        updatedStats.adminBalance
+                    )
+
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "ADMIN WITHDRAW ERROR:",
+                error
+            );
+
+
+            res.status(500).json({
+
+                success: false,
+
+                error:
+                    "Ошибка вывода"
+
+            });
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| 404
+|--------------------------------------------------------------------------
+*/
+
+app.use(
+    (req, res) => {
+
+        res.status(404).json({
+
+            success: false,
+
+            error:
+                "Страница не найдена"
+
+        });
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| START
+|--------------------------------------------------------------------------
+*/
+
+app.listen(
+    PORT,
+    () => {
+
+        console.log("");
+        console.log(
+            "======================================"
+        );
+        console.log(
+            "🎰 БАРАН DEMO CASINO"
+        );
+        console.log(
+            "======================================"
+        );
+        console.log(
+            `🚀 Порт: ${PORT}`
+        );
+        console.log(
+            "🔓 Telegram authentication: OFF"
+        );
+        console.log(
+            "💎 Balance: 1 = 1"
+        );
+        console.log(
+            "======================================"
+        );
+        console.log("");
+
+    }
+);
